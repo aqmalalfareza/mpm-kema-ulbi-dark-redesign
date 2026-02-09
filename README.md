@@ -1,6 +1,6 @@
 # Cloudflare Workers Full-Stack Template
 
-[![Deploy to Cloudflare][cloudflarebutton]]
+[![Deploy to Cloudflare][![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/aqmalalfareza/mpm-kema-ulbi-dark-redesign)]
 
 A production-ready full-stack application template built with Cloudflare Workers, Durable Objects for stateful entities, React frontend, Tailwind CSS, and shadcn/ui. Features a chat application demo with users, chat boards, and real-time message handling—all powered by a single shared Durable Object for efficient global state management.
 
@@ -112,7 +112,7 @@ All routes under `/api/`:
    wrangler pages publish dist --project-name my-app
    ```
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/aqmalalfareza/mpm-kema-ulbi-dark-redesign)
 
 **Note**: Ensure `wrangler.toml` has your account ID and secrets. Assets are served via Workers with SPA fallback.
 
