@@ -1,41 +1,59 @@
-/**
- * Minimal real-world demo: One Durable Object instance per entity (User, ChatBoard), with Indexes for listing.
- */
 import { IndexedEntity } from "./core-utils";
-import type { User, Chat, ChatMessage } from "@shared/types";
-import { MOCK_CHAT_MESSAGES, MOCK_CHATS, MOCK_USERS } from "@shared/mock-data";
-
-// USER ENTITY: one DO instance per user
-export class UserEntity extends IndexedEntity<User> {
-  static readonly entityName = "user";
-  static readonly indexName = "users";
-  static readonly initialState: User = { id: "", name: "" };
-  static seedData = MOCK_USERS;
-}
-
-// CHAT BOARD ENTITY: one DO instance per chat board, stores its own messages
-export type ChatBoardState = Chat & { messages: ChatMessage[] };
-
-const SEED_CHAT_BOARDS: ChatBoardState[] = MOCK_CHATS.map(c => ({
-  ...c,
-  messages: MOCK_CHAT_MESSAGES.filter(m => m.chatId === c.id),
-}));
-
-export class ChatBoardEntity extends IndexedEntity<ChatBoardState> {
-  static readonly entityName = "chat";
-  static readonly indexName = "chats";
-  static readonly initialState: ChatBoardState = { id: "", title: "", messages: [] };
-  static seedData = SEED_CHAT_BOARDS;
-
-  async listMessages(): Promise<ChatMessage[]> {
-    const { messages } = await this.getState();
-    return messages;
+import type { Aspiration, CreateAspirationRequest } from "@shared/types";
+export class AspirationEntity extends IndexedEntity<Aspiration> {
+  static readonly entityName = "aspiration";
+  static readonly indexName = "aspirations";
+  static readonly initialState: Aspiration = {
+    id: "",
+    trackingId: "",
+    name: "",
+    email: "",
+    category: "LAINNYA",
+    subject: "",
+    description: "",
+    status: "PENDING",
+    createdAt: 0,
+    updatedAt: 0,
+    responses: []
+  };
+  static async generateTrackingId(): Promise<string> {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ASP-${timestamp}${random}`;
   }
-
-  async sendMessage(userId: string, text: string): Promise<ChatMessage> {
-    const msg: ChatMessage = { id: crypto.randomUUID(), chatId: this.id, userId, text, ts: Date.now() };
-    await this.mutate(s => ({ ...s, messages: [...s.messages, msg] }));
-    return msg;
+  static async createNew(env: any, data: CreateAspirationRequest): Promise<Aspiration> {
+    const id = crypto.randomUUID();
+    const trackingId = await this.generateTrackingId();
+    const now = Date.now();
+    const aspiration: Aspiration = {
+      ...this.initialState,
+      id,
+      trackingId,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Store in primary storage and index by ID
+    await this.create(env, aspiration);
+    // Custom index: track by trackingId separately for fast public lookups
+    const trackIndex = new (class extends IndexedEntity<{id: string, refId: string}> {
+      static readonly entityName = "track-map";
+      static readonly indexName = "track-mapping";
+      static readonly initialState = { id: "", refId: "" };
+    })(env, trackingId);
+    await trackIndex.save({ id: trackingId, refId: id });
+    return aspiration;
+  }
+  static async getByTrackingId(env: any, trackingId: string): Promise<Aspiration | null> {
+    const trackInstance = new (class extends IndexedEntity<{id: string, refId: string}> {
+      static readonly entityName = "track-map";
+      static readonly indexName = "track-mapping";
+      static readonly initialState = { id: "", refId: "" };
+    })(env, trackingId);
+    const mapping = await trackInstance.getState();
+    if (!mapping.refId) return null;
+    const asp = new AspirationEntity(env, mapping.refId);
+    if (!await asp.exists()) return null;
+    return await asp.getState();
   }
 }
-

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -31,12 +30,12 @@ import {
 } from '@/components/ui/select';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
-import { ClipboardCheck, Loader2, Send, Sparkles } from 'lucide-react';
+import { ClipboardCheck, Loader2, Send } from 'lucide-react';
 import type { Aspiration } from '@shared/types';
 const formSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
   email: z.string().email("Email tidak valid"),
-  category: z.enum(['AKADEMIK', 'FASILITAS', 'ORGANISASI', 'PROPOSAL', 'LAINNYA']),
+  category: z.enum(['AKADEMIK', 'FASILITAS', 'ORGANISASI', 'LAINNYA']),
   subject: z.string().min(5, "Subjek minimal 5 karakter"),
   description: z.string().min(10, "Deskripsi minimal 10 karakter"),
 });
@@ -48,13 +47,9 @@ export function AspirationForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       category: 'LAINNYA',
-      name: '',
-      email: '',
-      subject: '',
-      description: '',
     },
   });
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
       const data = await api<Aspiration>('/api/aspirations', {
@@ -62,103 +57,133 @@ export function AspirationForm() {
         body: JSON.stringify(values),
       });
       setResult(data);
-      toast.success("Aspirasi Anda telah diterima oleh sistem.");
+      toast.success("Aspirasi berhasil dikirim!");
     } catch (error) {
-      toast.error("Terjadi kendala teknis. Mohon coba lagi.");
+      toast.error("Gagal mengirim aspirasi. Coba lagi nanti.");
     } finally {
       setIsSubmitting(false);
     }
+  }
+  const handleCopy = () => {
+    if (result?.trackingId) {
+      navigator.clipboard.writeText(result.trackingId);
+      toast.info("ID Tracking disalin ke clipboard");
+    }
   };
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) setResult(null); }}>
+    <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) setResult(null); form.reset(); }}>
       <DialogTrigger asChild>
-        <Button size="lg" className="bg-brand-gold hover:bg-brand-gold/90 text-brand-black px-10 py-7 text-lg font-black uppercase tracking-widest rounded-full shadow-glow hover:scale-105 transition-all">
-          <Sparkles className="mr-2 w-5 h-5" /> Suarakan Aspirasi
+        <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg font-bold rounded-full shadow-lg hover:scale-105 transition-all">
+          Suarakan Aspirasi Sekarang
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] bg-brand-dark border-white/10 text-white">
-        <AnimatePresence mode="wait">
-          {result ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-10 text-center space-y-8">
-              <div className="mx-auto w-20 h-20 bg-brand-gold/10 rounded-full flex items-center justify-center border border-brand-gold/20 shadow-glow">
-                <ClipboardCheck className="w-10 h-10 text-brand-gold" />
-              </div>
-              <DialogHeader>
-                <DialogTitle className="text-center text-3xl font-serif font-black">Berhasil Terkirim</DialogTitle>
-                <DialogDescription className="text-center text-white/50">
-                  Simpan ID Tracking unik ini untuk memantau perkembangan aspirasi Anda secara real-time.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="p-8 bg-white/5 border border-brand-gold/30 rounded-2xl font-mono text-3xl font-black tracking-[0.2em] text-brand-gold flex items-center justify-between group">
-                {result.trackingId}
-                <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(result.trackingId); toast.info("Disalin"); }} className="hover:bg-brand-gold/10 text-brand-gold">
-                  <ClipboardCheck className="w-6 h-6" />
-                </Button>
-              </div>
-              <Button className="w-full bg-brand-gold text-brand-black font-bold uppercase tracking-widest py-6" onClick={() => setIsOpen(false)}>Kembali</Button>
-            </motion.div>
-          ) : (
-            <div className="space-y-6">
-              <DialogHeader>
-                <DialogTitle className="font-serif text-3xl font-black tracking-tight">Kirim Aspirasi</DialogTitle>
-                <DialogDescription className="text-white/50">Sampaikan keresahan atau ide konstruktif Anda untuk KEMA ULBI.</DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (
+      <DialogContent className="sm:max-w-[500px]">
+        {result ? (
+          <div className="py-6 text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <ClipboardCheck className="w-8 h-8 text-green-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-center text-2xl">Berhasil Terkirim!</DialogTitle>
+              <DialogDescription className="text-center">
+                Simpan ID Tracking berikut untuk memantau status aspirasi Anda.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-4 bg-muted rounded-lg font-mono text-2xl font-bold tracking-widest text-primary flex items-center justify-between">
+              {result.trackingId}
+              <Button variant="ghost" size="icon" onClick={handleCopy}>
+                <ClipboardCheck className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button className="w-full" onClick={() => setIsOpen(false)}>Tutup</Button>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Kirim Aspirasi Mahasiswa</DialogTitle>
+              <DialogDescription>
+                Sampaikan keluhan, saran, atau ide Anda untuk kemajuan KEMA ULBI.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs font-black uppercase tracking-widest text-white/40">Nama Lengkap</FormLabel>
-                        <FormControl><Input placeholder="John Doe" className="bg-white/5 border-white/10 focus:border-brand-gold transition-colors" {...field} /></FormControl>
+                        <FormLabel>Nama Lengkap</FormLabel>
+                        <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )} />
-                    <FormField control={form.control} name="email" render={({ field }) => (
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs font-black uppercase tracking-widest text-white/40">Email Kampus</FormLabel>
-                        <FormControl><Input placeholder="name@ulbi.ac.id" className="bg-white/5 border-white/10 focus:border-brand-gold transition-colors" {...field} /></FormControl>
+                        <FormLabel>Email Kampus</FormLabel>
+                        <FormControl><Input placeholder="john@ulbi.ac.id" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="category" render={({ field }) => (
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest text-white/40">Kategori</FormLabel>
+                      <FormLabel>Kategori</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger className="bg-white/5 border-white/10"><SelectValue placeholder="Pilih" /></SelectTrigger></FormControl>
-                        <SelectContent className="bg-brand-dark border-white/10 text-white">
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih kategori" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
                           <SelectItem value="AKADEMIK">Akademik</SelectItem>
                           <SelectItem value="FASILITAS">Fasilitas Kampus</SelectItem>
-                          <SelectItem value="ORGANISASI">Organisasi</SelectItem>
-                          <SelectItem value="PROPOSAL">Proposal</SelectItem>
+                          <SelectItem value="ORGANISASI">Organisasi & Kemahasiswaan</SelectItem>
                           <SelectItem value="LAINNYA">Lainnya</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
-                  )} />
-                  <FormField control={form.control} name="subject" render={({ field }) => (
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest text-white/40">Subjek</FormLabel>
-                      <FormControl><Input placeholder="Judul aspirasi" className="bg-white/5 border-white/10 focus:border-brand-gold transition-colors" {...field} /></FormControl>
+                      <FormLabel>Subjek</FormLabel>
+                      <FormControl><Input placeholder="Judul singkat aspirasi" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )} />
-                  <FormField control={form.control} name="description" render={({ field }) => (
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest text-white/40">Deskripsi Detail</FormLabel>
-                      <FormControl><Textarea placeholder="Uraikan aspirasi Anda..." className="min-h-[140px] bg-white/5 border-white/10 focus:border-brand-gold transition-colors resize-none" {...field} /></FormControl>
+                      <FormLabel>Detail Aspirasi</FormLabel>
+                      <FormControl><Textarea placeholder="Jelaskan aspirasi Anda secara detail..." className="min-h-[120px]" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full py-7 bg-brand-gold text-brand-black font-black uppercase tracking-[0.2em]" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Kirim Sekarang"}
-                  </Button>
-                </form>
-              </Form>
-            </div>
-          )}
-        </AnimatePresence>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  Kirim Aspirasi
+                </Button>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

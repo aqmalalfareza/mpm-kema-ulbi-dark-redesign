@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,57 +11,114 @@ import {
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Search, Loader2 } from 'lucide-react';
-import type { Aspiration } from '@shared/types';
+import { Search, CheckCircle2, Circle, Clock, MessageSquare } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { Aspiration, AspirationStatus } from '@shared/types';
+import { format } from 'date-fns';
+const STAGES: { label: string; value: AspirationStatus }[] = [
+  { label: 'Terkirim', value: 'PENDING' },
+  { label: 'Ditinjau MPM', value: 'REVIEW' },
+  { label: 'Diproses Kampus', value: 'DIPROSES' },
+  { label: 'Selesai', value: 'SELESAI' },
+];
 export function StatusCheck() {
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
-  const handleSearch = async () => {
+  const [data, setData] = useState<Aspiration | null>(null);
+  async function handleSearch() {
     if (!trackingId.trim()) return;
     setLoading(true);
     try {
       const result = await api<Aspiration>(`/api/aspirations/track/${trackingId.toUpperCase()}`);
-      if (result) {
-        setIsOpen(false);
-        navigate(`/status/${result.trackingId}`);
-      }
+      setData(result);
     } catch (e) {
-      toast.error("ID Tracking tidak valid atau tidak ditemukan.");
+      toast.error("ID Tracking tidak ditemukan");
+      setData(null);
     } finally {
       setLoading(false);
     }
-  };
+  }
+  const currentStageIndex = data ? STAGES.findIndex(s => s.value === data.status) : -1;
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog onOpenChange={(v) => { if(!v) { setData(null); setTrackingId(''); } }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="rounded-full border-white/10 hover:border-brand-gold/50 hover:bg-white/5 text-xs font-bold uppercase tracking-widest h-12 px-8">
-          Pantau Status
+        <Button variant="outline" size="lg" className="rounded-full px-8 py-6 border-2">
+          Cek Status Aspirasi
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[450px] bg-brand-dark border-white/10 text-white">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl font-black">Lacak Aspirasi</DialogTitle>
-          <DialogDescription className="text-white/50">Masukkan kode tracking unik untuk melihat progres tindak lanjut.</DialogDescription>
+          <DialogTitle>Lacak Aspirasi</DialogTitle>
+          <DialogDescription>Masukkan kode tracking yang Anda dapatkan saat mengirim aspirasi.</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-6 mt-6">
-          <Input
-            placeholder="CONTOH: ASP-20240101-0001"
-            className="uppercase font-mono text-lg py-7 bg-white/5 border-white/10 focus:border-brand-gold transition-colors text-center tracking-widest"
+        <div className="flex gap-2 mt-4">
+          <Input 
+            placeholder="Contoh: ASP-123456" 
+            className="uppercase font-mono text-lg"
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <Button 
-            onClick={handleSearch} 
-            disabled={loading} 
-            className="w-full bg-brand-gold text-brand-black font-black uppercase tracking-widest py-7"
-          >
-            {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Search className="mr-2 h-5 w-5" />}
-            Cari Data
+          <Button onClick={handleSearch} disabled={loading}>
+            {loading ? <Clock className="animate-spin" /> : <Search />}
           </Button>
         </div>
+        {data && (
+          <div className="mt-8 space-y-6 animate-fade-in">
+            <div className="p-4 bg-accent/50 rounded-lg border">
+              <h3 className="font-bold text-lg mb-1">{data.subject}</h3>
+              <p className="text-sm text-muted-foreground">Kategori: <span className="text-foreground font-medium">{data.category}</span></p>
+              <p className="text-sm text-muted-foreground">Tanggal: {format(data.createdAt, 'dd MMM yyyy, HH:mm')}</p>
+            </div>
+            <div className="relative space-y-4">
+              {STAGES.map((stage, idx) => {
+                const isCompleted = idx <= currentStageIndex;
+                const isCurrent = idx === currentStageIndex;
+                return (
+                  <div key={stage.value} className="flex gap-4 relative">
+                    {idx !== STAGES.length - 1 && (
+                      <div className={cn(
+                        "absolute left-3 top-6 w-0.5 h-full",
+                        isCompleted ? "bg-primary" : "bg-muted"
+                      )} />
+                    )}
+                    <div className={cn(
+                      "z-10 w-6 h-6 rounded-full flex items-center justify-center bg-background border-2",
+                      isCompleted ? "border-primary text-primary" : "border-muted text-muted"
+                    )}>
+                      {isCompleted ? <CheckCircle2 className="w-4 h-4 fill-primary text-white" /> : <Circle className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <p className={cn(
+                        "font-semibold",
+                        isCurrent ? "text-primary" : isCompleted ? "text-foreground" : "text-muted-foreground"
+                      )}>{stage.label}</p>
+                      {isCurrent && (
+                        <p className="text-xs text-muted-foreground">Sedang dalam tahap ini...</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {data.responses && data.responses.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" /> Tanggapan Resmi
+                </h4>
+                {data.responses.map(res => (
+                  <div key={res.id} className="p-3 bg-muted rounded border-l-4 border-primary text-sm">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-xs uppercase">{res.authorRole}</span>
+                      <span className="text-2xs text-muted-foreground">{format(res.timestamp, 'dd/MM/yy HH:mm')}</span>
+                    </div>
+                    <p>{res.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
