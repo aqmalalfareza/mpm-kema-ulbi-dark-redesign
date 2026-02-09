@@ -13,6 +13,7 @@ export interface AspirationResponse {
   content: string;
   timestamp: number;
   statusAtResponse: AspirationStatus;
+  fileUrl?: string;
 }
 export interface Aspiration {
   id: string;
@@ -28,6 +29,36 @@ export interface Aspiration {
   responses?: AspirationResponse[];
   internalNotes?: string;
   assignedTo?: UserRole;
+  tanggapanKema?: string;
+  tanggapanMpm?: string;
+  fileUrl?: string;
+  isFeedbackSent?: boolean;
+}
+export interface LegislativeDocument {
+  id: string;
+  title: string;
+  category: string;
+  url: string;
+  updatedAt: number;
+}
+export interface StructureMember {
+  id: string;
+  name: string;
+  position: string;
+  imageUrl?: string;
+  order: number;
+}
+export interface SupervisionActivity {
+  id: string;
+  title: string;
+  date: number;
+  description: string;
+}
+export interface DashboardStats {
+  total: number;
+  pending: number;
+  processed: number;
+  completed: number;
 }
 export interface CreateAspirationRequest {
   name: string;
@@ -40,11 +71,14 @@ export interface UpdateAspirationRequest {
   status?: AspirationStatus;
   internalNotes?: string;
   assignedTo?: UserRole;
+  tanggapanKema?: string;
+  tanggapanMpm?: string;
 }
 export interface AddResponseRequest {
   content: string;
   authorRole: UserRole;
   authorName: string;
+  fileUrl?: string;
 }
 export interface User {
   id: string;

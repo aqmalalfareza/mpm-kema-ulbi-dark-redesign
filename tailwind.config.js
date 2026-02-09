@@ -7,6 +7,7 @@ export default {
   		fontFamily: {
   			sans: ['Inter', 'sans-serif'],
 			display: ['Inter', 'system-ui', 'sans-serif'],
+			serif: ['Playfair Display', 'serif'],
   			mono: ['JetBrains Mono', 'monospace']
   		},
   		borderRadius: {
@@ -17,18 +18,23 @@ export default {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+			brand: {
+				black: '#1a1a1a',
+				dark: '#141414',
+				gold: '#c9a961',
+			},
   			muted: {
   				DEFAULT: 'hsl(var(--muted))',
   				foreground: 'hsl(var(--muted-foreground))'
   			},
   			primary: {
-  				DEFAULT: '#1e40af', // ULBI Blue
-  				foreground: '#ffffff'
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
   			},
-        secondary: {
-          DEFAULT: '#eab308', // ULBI Gold
-          foreground: '#0f172a'
-        },
+			secondary: {
+				DEFAULT: 'hsl(var(--secondary))',
+				foreground: 'hsl(var(--secondary-foreground))'
+			},
   			border: 'hsl(var(--border))',
   			ring: 'hsl(var(--ring))',
   			card: {
@@ -49,6 +55,10 @@ export default {
   			},
   			input: 'hsl(var(--input))'
   		},
+		boxShadow: {
+			glow: '0 0 20px rgba(201, 169, 97, 0.3)',
+			glass: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+		},
   		keyframes: {
   			'fade-in': {
   				'0%': { opacity: '0', transform: 'translateY(10px)' },

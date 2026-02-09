@@ -6,11 +6,25 @@ import type {
   CreateAspirationRequest, 
   AuthRequest, 
   UserRole, 
-  UpdateAspirationRequest, 
+  UpdateAspirationRequest,
   AddResponseRequest,
   AspirationResponse
 } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // Public: Global Stats
+  app.get('/api/stats', async (c) => {
+    try {
+      const { items } = await AspirationEntity.list(c.env, null, 1000);
+      return ok(c, {
+        total: items.length,
+        pending: items.filter(i => i.status === 'PENDING').length,
+        processed: items.filter(i => i.status === 'DIPROSES' || i.status === 'REVIEW').length,
+        completed: items.filter(i => i.status === 'SELESAI').length,
+      });
+    } catch (e) {
+      return ok(c, { total: 0, pending: 0, processed: 0, completed: 0 });
+    }
+  });
   // Mock Auth
   app.post('/api/auth/login', async (c) => {
     const { username } = await c.req.json() as AuthRequest;
@@ -20,13 +34,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       'bem_ulbi': { name: 'Presiden BEM', role: 'BEM' }
     };
     const user = demoUsers[username];
-    if (!user) return bad(c, "User tidak ditemukan");
+    if (!user) return bad(c, "Akses ditolak: User tidak terdaftar");
     return ok(c, {
       user: { id: username, ...user, username },
-      token: "mock-jwt-token"
+      token: "mock-session-token"
     });
   });
-  // Internal: List Aspirations
+  // Internal: List
   app.get('/api/aspirations', async (c) => {
     try {
       const { items } = await AspirationEntity.list(c.env, null, 100);
@@ -35,27 +49,27 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return ok(c, { items: [] });
     }
   });
-  // Public: Submit Aspiration
+  // Public: Submit
   app.post('/api/aspirations', async (c) => {
     try {
       const body = await c.req.json() as CreateAspirationRequest;
       if (!body.name || !body.email || !body.subject || !body.description) {
-        return bad(c, "Semua field wajib diisi");
+        return bad(c, "Lengkapi seluruh informasi wajib");
       }
       const aspiration = await AspirationEntity.createNew(c.env, body);
       return ok(c, aspiration);
     } catch (e) {
-      return bad(c, "Gagal mengirim aspirasi");
+      return bad(c, "Gagal memproses aspirasi");
     }
   });
-  // Public: Track Aspiration
+  // Public: Track
   app.get('/api/aspirations/track/:trackingId', async (c) => {
-    const trackingId = c.req.param('trackingId');
+    const trackingId = c.req.param('trackingId').toUpperCase();
     const aspiration = await AspirationEntity.getByTrackingId(c.env, trackingId);
-    if (!aspiration) return notFound(c, "Aspirasi tidak ditemukan");
+    if (!aspiration) return notFound(c, "Data pelacakan tidak ditemukan");
     return ok(c, aspiration);
   });
-  // Internal: Update Aspiration (Status, Assignment, Internal Notes)
+  // Internal: Update
   app.patch('/api/aspirations/:id', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json() as UpdateAspirationRequest;
@@ -68,7 +82,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }));
     return ok(c, updated);
   });
-  // Internal: Add Official Response
+  // Internal: Respond
   app.post('/api/aspirations/:id/responses', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json() as AddResponseRequest;
@@ -80,7 +94,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       authorName: body.authorName,
       content: body.content,
       timestamp: Date.now(),
-      statusAtResponse: (await ent.getState()).status
+      statusAtResponse: (await ent.getState()).status,
+      fileUrl: body.fileUrl
     };
     const updated = await ent.mutate(s => ({
       ...s,

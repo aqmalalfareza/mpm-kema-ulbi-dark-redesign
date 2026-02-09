@@ -17,6 +17,7 @@ import LoginPage from '@/pages/LoginPage'
 import MPMDashboard from '@/pages/dashboard/MPMDashboard'
 import StaffDashboard from '@/pages/dashboard/StaffDashboard'
 import BEMDashboard from '@/pages/dashboard/BEMDashboard'
+import StatusResultPage from '@/pages/StatusResultPage'
 import { useAuthStore } from '@/lib/auth-store'
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,7 +27,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-// Separated component for Fast Refresh compatibility
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useAuthStore(s => s.user);
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
@@ -35,7 +35,6 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   return <>{children}</>;
 };
-// Separated component for Fast Refresh compatibility
 export const DashboardRouter = () => {
   const user = useAuthStore(s => s.user);
   if (!user) return <Navigate to="/login" />;
@@ -55,6 +54,11 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/status/:id",
+    element: <StatusResultPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {

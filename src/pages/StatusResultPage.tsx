@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import type { Aspiration, AspirationStatus } from '@shared/types';
 import { format } from 'date-fns';
-import {
-  CheckCircle2,
-  Clock,
-  ShieldCheck,
-  MessageSquare,
-  Download,
+import { 
+  CheckCircle2, 
+  Clock, 
+  ShieldCheck, 
+  MessageSquare, 
+  Download, 
   ChevronLeft,
   ArrowRight,
   Circle
@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 const STAGES: { label: string; value: AspirationStatus }[] = [
   { label: 'Aspirasi Terkirim', value: 'PENDING' },
   { label: 'Ditinjau Legislatif', value: 'REVIEW' },
@@ -28,32 +27,14 @@ export default function StatusResultPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Aspiration | null>(null);
   const [loading, setLoading] = useState(true);
-  const lastStatusRef = useRef<AspirationStatus | null>(null);
-  const fetchStatus = useCallback(async (showLoading = false) => {
-    if (!id) return;
-    if (showLoading) setLoading(true);
-    try {
-      const res = await api<Aspiration>(`/api/aspirations/track/${id.toUpperCase()}`);
-      if (lastStatusRef.current && lastStatusRef.current !== res.status) {
-        toast.info(`Status aspirasi Anda telah diperbarui menjadi: ${res.status}`);
-      }
-      lastStatusRef.current = res.status;
-      setData(res);
-    } catch (err) {
-      console.error("Gagal refresh status", err);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [id]);
   useEffect(() => {
     if (id) {
-      fetchStatus(true);
-      const interval = setInterval(() => {
-        fetchStatus(false);
-      }, 10000);
-      return () => clearInterval(interval);
+      api<Aspiration>(`/api/aspirations/track/${id.toUpperCase()}`)
+        .then(setData)
+        .catch(() => {})
+        .finally(() => setLoading(false));
     }
-  }, [id, fetchStatus]);
+  }, [id]);
   if (loading) return (
     <div className="min-h-screen bg-brand-black flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-brand-gold border-t-transparent rounded-full animate-spin" />
@@ -68,7 +49,7 @@ export default function StatusResultPage() {
   );
   const currentIdx = STAGES.findIndex(s => s.value === data.status);
   return (
-    <div className="min-h-screen bg-brand-black text-white selection:bg-brand-gold selection:text-brand-black">
+    <div className="min-h-screen bg-brand-black text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
         <Link to="/" className="inline-flex items-center gap-2 text-white/40 hover:text-brand-gold transition-colors mb-12 text-sm font-bold uppercase tracking-widest">
           <ChevronLeft className="w-4 h-4" /> Kembali
@@ -81,7 +62,7 @@ export default function StatusResultPage() {
             </div>
             <h1 className="text-4xl md:text-5xl font-serif font-black">{data.subject}</h1>
           </div>
-          <Badge className="bg-brand-gold text-brand-black px-6 py-2 rounded-full font-bold text-sm uppercase tracking-widest h-fit shadow-glow">
+          <Badge className="bg-brand-gold text-brand-black px-6 py-2 rounded-full font-bold text-sm uppercase tracking-widest h-fit">
             {data.status}
           </Badge>
         </header>
@@ -122,11 +103,11 @@ export default function StatusResultPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-white/30 mb-1 uppercase text-[10px] font-black tracking-widest">Nama</p>
+                    <p className="text-white/30 mb-1">Nama</p>
                     <p className="font-bold">{data.name}</p>
                   </div>
                   <div>
-                    <p className="text-white/30 mb-1 uppercase text-[10px] font-black tracking-widest">Kategori</p>
+                    <p className="text-white/30 mb-1">Kategori</p>
                     <p className="font-bold">{data.category}</p>
                   </div>
                 </div>
@@ -161,11 +142,11 @@ export default function StatusResultPage() {
               </div>
             )}
             {data.status === 'SELESAI' && (
-              <div className="p-8 rounded-2xl bg-brand-gold text-brand-black text-center space-y-4 shadow-glow">
+              <div className="p-8 rounded-2xl bg-brand-gold text-brand-black text-center space-y-4">
                 <CheckCircle2 className="w-12 h-12 mx-auto" />
                 <h4 className="text-2xl font-serif font-black">Aspirasi Tuntas</h4>
                 <p className="text-sm font-medium opacity-80">Terima kasih telah berkontribusi untuk KEMA ULBI yang lebih baik.</p>
-                <Button className="bg-brand-black text-white hover:bg-brand-black/90 w-full mt-4 font-black uppercase tracking-widest text-[10px] h-12">Unduh Laporan Akhir</Button>
+                <Button className="bg-brand-black text-white hover:bg-brand-black/90 w-full mt-4">Unduh Laporan Akhir</Button>
               </div>
             )}
           </div>
