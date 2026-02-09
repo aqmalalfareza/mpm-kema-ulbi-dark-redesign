@@ -12,6 +12,7 @@ import { api } from '@/lib/api-client';
 import type { Aspiration } from '@shared/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 export default function BEMDashboard() {
   const [proposals, setProposals] = useState<Aspiration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +100,7 @@ export default function BEMDashboard() {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-mono text-[10px] font-bold text-muted-foreground">{prop.trackingId}</span>
-                  <Badge variant={prop.status === 'SELESAI' ? 'success' : 'default'} className="text-[10px]">
+                  <Badge variant={prop.status === 'SELESAI' ? 'secondary' : 'default'} className="text-[10px]">
                     {prop.status}
                   </Badge>
                 </div>

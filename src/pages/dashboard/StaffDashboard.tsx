@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api-client';
 import type { Aspiration } from '@shared/types';
 import { toast } from 'sonner';
-import { Megaphone, CheckCircle, Clock, MessageSquare, Send, Skeleton } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Megaphone, CheckCircle, Clock, MessageSquare, Send, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/lib/auth-store';
 import { format } from 'date-fns';
 export default function StaffDashboard() {
