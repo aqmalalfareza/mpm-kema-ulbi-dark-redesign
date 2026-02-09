@@ -33,7 +33,7 @@ export default function MPMDashboard() {
     if (showLoading) setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
-      setData(res.items);
+      setData(res.items || []);
     } catch (err) {
       console.error("Gagal sync data", err);
     } finally {
@@ -62,6 +62,32 @@ export default function MPMDashboard() {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+  const exportToCSV = () => {
+    const headers = ['Tracking ID', 'Subject', 'Category', 'Status', 'Name', 'Email', 'Created At'];
+    const csvContent = [
+      headers.join(','),
+      ...data.map(item => [
+        item.trackingId,
+        `"${item.subject.replace(/"/g, '""')}"`,
+        item.category,
+        item.status,
+        `"${item.name.replace(/"/g, '""')}"`,
+        item.email,
+        format(new Date(item.createdAt), 'dd/MM/yyyy')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `aspirasi-mpm-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedAsp) return;
@@ -76,7 +102,7 @@ export default function MPMDashboard() {
         method: 'PATCH',
         body: JSON.stringify(updates),
       });
-      toast.success("Update berhasil disimpan");
+      toast.success(`Status berhasil disimpan. Mock email dikirim ke ${selectedAsp?.email} dengan status baru: ${updates.status}`);
       setIsUpdateOpen(false);
       fetchAspirations(false);
     } catch (err) {
@@ -106,6 +132,9 @@ export default function MPMDashboard() {
             </Button>
             <Button onClick={() => fetchAspirations(true)} className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 shadow-glow">
               <Activity className="w-4 h-4 mr-2" /> Sync Data
+            </Button>
+            <Button onClick={exportToCSV} className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 shadow-glow">
+              <Download className="w-4 h-4 mr-2" /> CSV Export
             </Button>
           </div>
         </header>

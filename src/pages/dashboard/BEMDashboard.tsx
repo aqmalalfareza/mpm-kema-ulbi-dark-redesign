@@ -21,7 +21,7 @@ export default function BEMDashboard() {
     if (showLoading) setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
-      setProposals(res.items.filter(i => i.category === 'PROPOSAL'));
+      setProposals(res?.items?.filter(i => i.category === 'PROPOSAL') || []);
     } catch (e) {
       console.error("Gagal memuat data proposal", e);
     } finally {
@@ -38,19 +38,27 @@ export default function BEMDashboard() {
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const subject = formData.get('subject') as string || '';
+    const description = formData.get('description') as string || '';
+    if (!subject || !description) {
+      toast.error('Judul dan deskripsi wajib diisi');
+      return;
+    }
     const body = {
       name: "BEM KEMA ULBI",
       email: "bem@ulbi.ac.id",
       category: "PROPOSAL",
-      subject: formData.get('subject') as string,
-      description: formData.get('description') as string,
+      subject,
+      description,
+      assignedTo: 'MPM',
+      internalNotes: 'Proposal resmi pengajuan kegiatan dari BEM ULBI. Mohon tinjau prioritas anggaran legislatif.',
     };
     try {
       await api('/api/aspirations', {
         method: 'POST',
         body: JSON.stringify(body),
       });
-      toast.success("Proposal berhasil diajukan!");
+      toast.success('Proposal diajukan & diteruskan ke MPM untuk review.');
       setIsNewOpen(false);
       fetchProposals(false);
     } catch (err) {
@@ -105,7 +113,7 @@ export default function BEMDashboard() {
               <p className="text-white/40 mt-2">Gunakan tombol di atas untuk memulai pengajuan.</p>
             </div>
           ) : proposals.map((prop) => (
-            <Card key={prop.id} className="glass-card border-none bg-brand-dark/40 hover-lift group overflow-hidden">
+            <Card key={prop.id || Math.random()} className="glass-card border-none bg-brand-dark/40 hover-lift group overflow-hidden">
               <div className={cn(
                 "h-1.5 w-full",
                 prop.status === 'SELESAI' ? 'bg-green-500' :
@@ -113,13 +121,13 @@ export default function BEMDashboard() {
               )} />
               <CardHeader className="pb-4 p-8">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="font-mono text-[10px] font-black text-brand-gold uppercase tracking-widest">{prop.trackingId}</span>
+                  <span className="font-mono text-[10px] font-black text-brand-gold uppercase tracking-widest">{prop.trackingId || 'N/A'}</span>
                   <Badge className={cn("text-[9px] font-black uppercase tracking-widest", prop.status === 'SELESAI' ? "bg-green-500/10 text-green-500" : "bg-white/5 text-white/40")}>
-                    {prop.status}
+                    {prop.status || 'UNKNOWN'}
                   </Badge>
                 </div>
-                <CardTitle className="text-xl font-serif font-black text-white tracking-tight leading-snug group-hover:text-brand-gold transition-colors">{prop.subject}</CardTitle>
-                <CardDescription className="text-white/20 text-[10px] font-bold uppercase tracking-widest mt-2">Dibuat: {format(prop.createdAt, 'dd/MM/yyyy')}</CardDescription>
+                <CardTitle className="text-xl font-serif font-black text-white tracking-tight leading-snug group-hover:text-brand-gold transition-colors">{prop.subject || 'Tanpa Judul'}</CardTitle>
+                <CardDescription className="text-white/20 text-[10px] font-bold uppercase tracking-widest mt-2">Dibuat: {prop.createdAt ? format(new Date(prop.createdAt), 'dd/MM/yyyy') : 'N/A'}</CardDescription>
               </CardHeader>
               <CardContent className="px-8 pb-8 space-y-8">
                 <div className="space-y-3">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import type { Aspiration, AspirationStatus } from '@shared/types';
@@ -29,10 +29,11 @@ export default function StatusResultPage() {
   const [data, setData] = useState<Aspiration | null>(null);
   const [loading, setLoading] = useState(true);
   const lastStatusRef = useRef<AspirationStatus | null>(null);
-  const fetchStatus = async (showLoading = false) => {
+  const fetchStatus = useCallback(async (showLoading = false) => {
+    if (!id) return;
     if (showLoading) setLoading(true);
     try {
-      const res = await api<Aspiration>(`/api/aspirations/track/${id?.toUpperCase()}`);
+      const res = await api<Aspiration>(`/api/aspirations/track/${id.toUpperCase()}`);
       if (lastStatusRef.current && lastStatusRef.current !== res.status) {
         toast.info(`Status aspirasi Anda telah diperbarui menjadi: ${res.status}`);
       }
@@ -43,7 +44,7 @@ export default function StatusResultPage() {
     } finally {
       if (showLoading) setLoading(false);
     }
-  };
+  }, [id]);
   useEffect(() => {
     if (id) {
       fetchStatus(true);
@@ -52,7 +53,7 @@ export default function StatusResultPage() {
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [id]);
+  }, [id, fetchStatus]);
   if (loading) return (
     <div className="min-h-screen bg-brand-black flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-brand-gold border-t-transparent rounded-full animate-spin" />

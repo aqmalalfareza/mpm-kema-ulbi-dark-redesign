@@ -21,39 +21,85 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth-store";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { api } from '@/lib/api-client';
+import { Aspiration } from "@shared/types";
+interface NavItem {
+  title: string;
+  icon: React.ComponentType<any>;
+  url: string;
+  badgeCount?: number;
+}
+
 export function AppSidebar(): JSX.Element {
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [aspirations, setAspirations] = React.useState<Aspiration[]>([]);
+
+  const fetchAspirations = async () => {
+    try {
+      const res = await api<{items: Aspiration[]}>('/api/aspirations');
+      setAspirations(res.items || []);
+    } catch (error) {
+      console.error('Failed to fetch aspirations:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAspirations();
+    const interval = setInterval(fetchAspirations, 10000);
+    return () => clearInterval(interval);
+  }, []);
   const handleLogout = () => {
     logout();
     navigate("/");
   };
-  const getMenuItems = () => {
-    if (!user) return [];
-    const items = [
+    const getMenuItems = (): NavItem[] => {
+      if (!user || !user.role) return [];
+      const items: NavItem[] = [
       { title: "Overview", icon: LayoutDashboard, url: "/dashboard" }
     ];
+
+    const getBadgeCount = (itemTitle: string) => {
+      const isActive = location.pathname === '/dashboard';
+      if (isActive) {
+        return 0;
+      }
+      
+      if (user.role === 'MPM' && itemTitle === 'Manajemen Aspirasi') {
+        return aspirations.filter(a => ['PENDING', 'REVIEW'].includes(a.status)).length;
+      }
+      if (user.role === 'KEMAHASISWAAN' && itemTitle === 'Inbox Aspirasi') {
+        return aspirations.filter(a => a.assignedTo === 'KEMAHASISWAAN' && a.status !== 'SELESAI').length;
+      }
+      if (user.role === 'BEM' && itemTitle === 'Proposal Kegiatan') {
+        return aspirations.filter(a => a.category === 'PROPOSAL' && a.status !== 'SELESAI').length;
+      }
+      return 0;
+    };
+
     if (user.role === 'MPM') {
       items.push(
-        { title: "Manajemen Aspirasi", icon: Inbox, url: "/dashboard" },
-        { title: "Dokumen Legislatif", icon: FileText, url: "/dashboard" },
-        { title: "Struktur KEMA", icon: Users, url: "/dashboard" },
-        { title: "Data Statistik", icon: PieChart, url: "/dashboard" }
+        { title: "Manajemen Aspirasi", icon: Inbox, url: "/dashboard", badgeCount: getBadgeCount('Manajemen Aspirasi') },
+        { title: "Dokumen Legislatif", icon: FileText, url: "/dashboard", badgeCount: 0 },
+        { title: "Struktur KEMA", icon: Users, url: "/dashboard", badgeCount: 0 },
+        { title: "Data Statistik", icon: PieChart, url: "/dashboard", badgeCount: 0 }
       );
     } else if (user.role === 'KEMAHASISWAAN') {
       items.push(
-        { title: "Inbox Aspirasi", icon: Megaphone, url: "/dashboard" },
-        { title: "Riwayat Respon", icon: FileText, url: "/dashboard" }
+        { title: "Inbox Aspirasi", icon: Megaphone, url: "/dashboard", badgeCount: getBadgeCount('Inbox Aspirasi') },
+        { title: "Riwayat Respon", icon: FileText, url: "/dashboard", badgeCount: 0 }
       );
     } else if (user.role === 'BEM') {
       items.push(
-        { title: "Proposal Kegiatan", icon: FileText, url: "/dashboard" },
-        { title: "Status Pengajuan", icon: Inbox, url: "/dashboard" }
+        { title: "Proposal Kegiatan", icon: FileText, url: "/dashboard", badgeCount: getBadgeCount('Proposal Kegiatan') },
+        { title: "Status Pengajuan", icon: Inbox, url: "/dashboard", badgeCount: 0 }
       );
     }
     return items;
@@ -79,23 +125,32 @@ export function AppSidebar(): JSX.Element {
             Navigasi Utama
           </SidebarGroupLabel>
           <SidebarMenu>
-            {getMenuItems().map((item, idx) => {
+            {getMenuItems().map((item: NavItem, idx) => {
               const isActive = location.pathname === item.url;
               return (
                 <SidebarMenuItem key={idx} className="mb-1">
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     tooltip={item.title}
                     className={cn(
-                      "py-6 px-4 rounded-xl transition-all duration-200",
-                      isActive 
-                        ? "bg-brand-gold/10 text-brand-gold" 
+                      "py-6 px-4 rounded-xl transition-all duration-200 flex items-center justify-between w-full",
+                      isActive
+                        ? "bg-brand-gold/10 text-brand-gold"
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
-                    <a href={item.url} onClick={(e) => { e.preventDefault(); navigate(item.url); }}>
-                      <item.icon className={cn("w-5 h-5", isActive ? "text-brand-gold" : "text-inherit")} />
-                      <span className="font-bold text-sm tracking-tight ml-2">{item.title}</span>
+                    <a href={item.url} onClick={(e) => { e.preventDefault(); navigate(item.url); }} className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        {React.createElement(item.icon, { 
+                          className: cn("w-5 h-5", isActive ? "text-brand-gold" : "text-inherit") 
+                        })}
+                        <span className="font-bold text-sm tracking-tight ml-2">{item.title}</span>
+                      </div>
+                      {('badgeCount' in item && item.badgeCount! > 0) && (
+                        <Badge variant="destructive" className="ml-2 h-5 w-5 text-xs font-bold shadow-md">
+                          {item.badgeCount!}
+                        </Badge>
+                      )}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

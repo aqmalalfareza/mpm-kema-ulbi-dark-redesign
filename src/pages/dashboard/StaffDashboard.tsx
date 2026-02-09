@@ -20,6 +20,7 @@ export default function StaffDashboard() {
   const [replyId, setReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [replyFileUrl, setReplyFileUrl] = useState('');
   const user = useAuthStore(s => s.user);
   const fetchTasks = async (showLoading = false) => {
     if (showLoading) setLoading(true);
@@ -31,6 +32,17 @@ export default function StaffDashboard() {
       console.error("Gagal memuat tugas", err);
     } finally {
       if (showLoading) setLoading(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setReplyFileUrl(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
   useEffect(() => {
@@ -49,16 +61,18 @@ export default function StaffDashboard() {
         body: JSON.stringify({
           content: replyText,
           authorRole: user.role,
-          authorName: user.name
+          authorName: user.name,
+          fileUrl: replyFileUrl || undefined
         }),
       });
       await api(`/api/aspirations/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'SELESAI' }),
       });
-      toast.success("Tanggapan resmi berhasil dipublikasikan");
+      toast.success('Tanggapan berhasil dipublikasikan & SELESAI. Mock email konfirmasi dikirim ke pemilik aspirasi.');
       setReplyText('');
       setReplyId(null);
+      setReplyFileUrl('');
       fetchTasks(false);
     } catch (err) {
       toast.error("Gagal mengirim tanggapan");
@@ -139,6 +153,15 @@ export default function StaffDashboard() {
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                         />
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Lampiran (Opsional)</Label>
+                          <input
+                            type="file"
+                            accept="*/*"
+                            onChange={handleFileSelect}
+                            className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white/70 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-brand-gold file:text-brand-black hover:file:bg-brand-gold/90"
+                          />
+                        </div>
                         <div className="flex gap-3">
                           <Button
                             className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] px-8 h-12 shadow-glow"
@@ -148,7 +171,10 @@ export default function StaffDashboard() {
                             {submitting ? <Clock className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                             Publikasikan Jawaban
                           </Button>
-                          <Button variant="ghost" onClick={() => setReplyId(null)} className="text-white/40 uppercase font-bold text-[10px] tracking-widest h-12 px-8">Batal</Button>
+                          <Button variant="ghost" onClick={() => {
+                            setReplyId(null);
+                            setReplyFileUrl('');
+                          }} className="text-white/40 uppercase font-bold text-[10px] tracking-widest h-12 px-8">Batal</Button>
                         </div>
                       </div>
                     ) : (
