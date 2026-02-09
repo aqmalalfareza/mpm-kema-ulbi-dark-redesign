@@ -1,16 +1,20 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
 import { AspirationForm } from '@/components/public/AspirationForm';
 import { StatusCheck } from '@/components/public/StatusCheck';
-import { 
-  ShieldCheck, 
-  Zap, 
-  Search, 
-  ChevronRight, 
-  Users, 
+import {
+  ShieldCheck,
+  Zap,
+  Search,
+  ChevronRight,
+  Users,
   FileText,
-  MessageSquareText
+  MessageSquareText,
+  Clock,
+  CheckCircle2,
+  LogIn
 } from 'lucide-react';
 export function HomePage() {
   return (
@@ -29,7 +33,10 @@ export function HomePage() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Fitur</a>
             <a href="#stats" className="hover:text-primary transition-colors">Statistik</a>
-            <a href="#about" className="hover:text-primary transition-colors">Tentang Kami</a>
+            <Link to="/login" className="flex items-center gap-1 hover:text-primary transition-colors">
+              <LogIn className="w-4 h-4" />
+              Staff Portal
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <StatusCheck />
@@ -49,7 +56,7 @@ export function HomePage() {
               Suara Anda, <span className="text-primary">Masa Depan</span> Kampus Kita.
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed animate-fade-in delay-100">
-              Platform digital Majelis Permusyawaratan Mahasiswa (MPM) KEMA ULBI untuk menampung, 
+              Platform digital Majelis Permusyawaratan Mahasiswa (MPM) KEMA ULBI untuk menampung,
               mengawal, dan mewujudkan aspirasi mahasiswa secara transparan dan akuntabel.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in delay-200">
@@ -73,23 +80,23 @@ export function HomePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { 
-                icon: ShieldCheck, 
-                title: "Privasi Terjamin", 
+              {
+                icon: ShieldCheck,
+                title: "Privasi Terjamin",
                 desc: "Data pelapor aman dan hanya digunakan untuk keperluan verifikasi serta tindak lanjut aspirasi.",
                 color: "text-blue-600",
                 bg: "bg-blue-50"
               },
-              { 
-                icon: Zap, 
-                title: "Proses Cepat", 
+              {
+                icon: Zap,
+                title: "Proses Cepat",
                 desc: "Aspirasi langsung diteruskan ke departemen terkait secara otomatis tanpa birokrasi berbelit.",
                 color: "text-yellow-600",
                 bg: "bg-yellow-50"
               },
-              { 
-                icon: Search, 
-                title: "Tracking Real-time", 
+              {
+                icon: Search,
+                title: "Tracking Real-time",
                 desc: "Pantau sejauh mana aspirasi Anda diproses melalui sistem pelacakan unik kapan saja.",
                 color: "text-green-600",
                 bg: "bg-green-50"
@@ -125,19 +132,6 @@ export function HomePage() {
           </div>
         </div>
       </section>
-      {/* Call to Action Footer Area */}
-      <section className="py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center bg-primary rounded-3xl p-12 text-white shadow-2xl overflow-hidden relative">
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Punya Masukan untuk Kampus?</h2>
-          <p className="text-primary-foreground/90 text-lg mb-10 max-w-2xl mx-auto">
-            Jangan biarkan ide dan keluhan Anda hanya menjadi bahan diskusi di kantin. 
-            Sampaikan secara resmi melalui jalur legislatif MPM KEMA ULBI.
-          </p>
-          <AspirationForm />
-        </div>
-      </section>
       {/* Footer */}
       <footer className="bg-muted/50 border-t py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -148,17 +142,17 @@ export function HomePage() {
                 <span className="font-bold text-xl">MPM KEMA ULBI</span>
               </div>
               <p className="text-muted-foreground text-sm max-w-sm">
-                Majelis Permusyawaratan Mahasiswa Universitas Logistik dan Bisnis Internasional. 
-                Wadah aspirasi dan pengawasan organisasi kemahasiswaan tertinggi di tingkat universitas.
+                Majelis Permusyawaratan Mahasiswa Universitas Logistik dan Bisnis Internasional.
               </p>
+              <div className="mt-4">
+                <Link to="/login" className="text-sm text-primary hover:underline font-medium">Login Panel Pengurus</Link>
+              </div>
             </div>
             <div>
               <h4 className="font-bold mb-6">Tautan Cepat</h4>
               <ul className="space-y-4 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Undang-Undang KEMA</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Struktur Organisasi</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Program Kerja</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Arsip Dokumen</a></li>
+                <li><a href="#" className="hover:text-primary">Undang-Undang KEMA</a></li>
+                <li><a href="#" className="hover:text-primary">Struktur Organisasi</a></li>
               </ul>
             </div>
             <div>
@@ -168,18 +162,11 @@ export function HomePage() {
                   <MessageSquareText className="w-4 h-4" />
                   <span>mpm@ulbi.ac.id</span>
                 </li>
-                <li>Gedung Rektorat Lt. 2</li>
-                <li>Jl. Sariasih No. 54, Bandung</li>
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t flex flex-col md:row items-center justify-between gap-4 text-xs text-muted-foreground">
+          <div className="pt-8 border-t text-center text-xs text-muted-foreground">
             <p>© 2024 MPM KEMA ULBI. Dikembangkan untuk kemajuan Almamater.</p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-primary">Instagram</a>
-              <a href="#" className="hover:text-primary">Twitter/X</a>
-              <a href="#" className="hover:text-primary">LinkedIn</a>
-            </div>
           </div>
         </div>
       </footer>

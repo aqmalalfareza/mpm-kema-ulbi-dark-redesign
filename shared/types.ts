@@ -36,4 +36,13 @@ export interface User {
   id: string;
   name: string;
   role: UserRole;
+  username?: string;
+}
+export interface AuthRequest {
+  username: string;
+  password?: string;
+}
+export interface AuthResponse {
+  user: User;
+  token: string;
 }

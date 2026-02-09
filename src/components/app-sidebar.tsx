@@ -1,72 +1,105 @@
-/* This is a demo sidebar. **COMPULSORY** Edit this file to customize the sidebar OR remove it from appLayout OR don't use appLayout at all */
 import React from "react";
-import { Home, Layers, Compass, Star, Settings, LifeBuoy } from "lucide-react";
+import { 
+  Inbox, 
+  FileText, 
+  PieChart, 
+  Settings, 
+  LogOut, 
+  User,
+  LayoutDashboard,
+  Megaphone
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarSeparator,
-  SidebarInput,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuAction,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-
+import { useAuthStore } from "@/lib/auth-store";
+import { useNavigate } from "react-router-dom";
 export function AppSidebar(): JSX.Element {
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+  const getMenuItems = () => {
+    if (!user) return [];
+    const items = [
+      { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" }
+    ];
+    if (user.role === 'MPM') {
+      items.push(
+        { title: "Semua Aspirasi", icon: Inbox, url: "/dashboard" },
+        { title: "Laporan Legislatif", icon: FileText, url: "/dashboard" },
+        { title: "Statistik", icon: PieChart, url: "/dashboard" }
+      );
+    } else if (user.role === 'KEMAHASISWAAN') {
+      items.push(
+        { title: "Inbox Tugas", icon: Megaphone, url: "/dashboard" },
+        { title: "Draft Jawaban", icon: FileText, url: "/dashboard" }
+      );
+    } else if (user.role === 'BEM') {
+      items.push(
+        { title: "Proposals Saya", icon: FileText, url: "/dashboard" },
+        { title: "Status Pengajuan", icon: Inbox, url: "/dashboard" }
+      );
+    }
+    return items;
+  };
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
-          <span className="text-sm font-medium">Demo Sidebar</span>
+        <div className="flex items-center gap-2 px-2 py-2">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold">M</div>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold leading-none">MPM Portal</span>
+            <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">{user?.role}</span>
+          </div>
         </div>
-        <SidebarInput placeholder="Search" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive>
-                <a href="#"><Home /> <span>Home</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Layers /> <span>Projects</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuAction>
-                <Star className="size-4" />
-              </SidebarMenuAction>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Compass /> <span>Explore</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Quick Links</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Star /> <span>Starred</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>5</SidebarMenuBadge>
-            </SidebarMenuItem>
+            {getMenuItems().map((item, idx) => (
+              <SidebarMenuItem key={idx}>
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <a href={item.url} onClick={(e) => { e.preventDefault(); navigate(item.url); }}>
+                    <item.icon /> <span>{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-2 text-xs text-muted-foreground">A simple shadcn sidebar</div>
+      <SidebarFooter className="border-t p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-2 px-2 py-2 mb-2">
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-xs font-medium truncate">{user?.name}</span>
+                <span className="text-[10px] text-muted-foreground truncate">{user?.username}</span>
+              </div>
+            </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+              <LogOut /> <span>Keluar</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );
