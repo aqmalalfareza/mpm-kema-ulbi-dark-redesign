@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,19 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/lib/api-client';
 import type { Aspiration, AspirationStatus, UserRole } from '@shared/types';
 import { format } from 'date-fns';
-import { 
-  Search, Filter, MessageSquare, ExternalLink, Inbox, 
-  CheckCircle, Clock, AlertCircle, BarChart3, PieChart
+import {
+  Search, Filter, ExternalLink, Inbox,
+  CheckCircle, Clock, AlertCircle, FileText, Users, Activity, BarChart3
 } from 'lucide-react';
-import { ResponsiveContainer, PieChart as RePie, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/lib/auth-store';
 export default function MPMDashboard() {
   const [data, setData] = useState<Aspiration[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAsp, setSelectedAsp] = useState<Aspiration | null>(null);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const user = useAuthStore(s => s.user);
   const fetchAspirations = async () => {
     setLoading(true);
     try {
@@ -72,128 +70,138 @@ export default function MPMDashboard() {
     };
     return <Badge variant={variants[status] as any || "default"} className="px-2 py-0 text-[10px]">{status}</Badge>;
   };
-  const chartData = [
-    { name: 'Pending', value: data.filter(a => a.status === 'PENDING').length, color: '#94a3b8' },
-    { name: 'Review', value: data.filter(a => a.status === 'REVIEW').length, color: '#3b82f6' },
-    { name: 'Proses', value: data.filter(a => a.status === 'DIPROSES').length, color: '#eab308' },
-    { name: 'Selesai', value: data.filter(a => a.status === 'SELESAI').length, color: '#22c55e' },
-  ];
   return (
-    <AppLayout container>
-      <div className="space-y-8 pb-12">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <AppLayout contentClassName="bg-brand-black min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 space-y-10">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-display font-extrabold tracking-tight">Command Center</h1>
-            <p className="text-muted-foreground mt-1">Lembaga Legislatif MPM KEMA ULBI — Manajemen Aspirasi.</p>
+            <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tight text-white mb-2">Command <span className="text-brand-gold italic">Center</span></h1>
+            <p className="text-white/40 text-sm font-medium uppercase tracking-widest">Otoritas Legislatif MPM KEMA ULBI</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filter</Button>
-            <Button onClick={fetchAspirations} variant="secondary"><Clock className="w-4 h-4 mr-2" /> Refresh</Button>
+          <div className="flex gap-3">
+            <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white/60 hover:text-brand-gold font-bold uppercase tracking-widest text-[10px] h-12 px-6">
+              <Filter className="w-4 h-4 mr-2" /> Filter
+            </Button>
+            <Button onClick={fetchAspirations} className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 shadow-glow">
+              <Activity className="w-4 h-4 mr-2" /> Sync Data
+            </Button>
           </div>
+        </header>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard label="Total Aspirasi" value={data.length} icon={Inbox} trend={{ value: "+8%", positive: true }} />
+          <StatCard label="Proses Review" value={data.filter(a => a.status === 'REVIEW').length} icon={AlertCircle} />
+          <StatCard label="Dalam Penanganan" value={data.filter(a => a.status === 'DIPROSES').length} icon={Clock} />
+          <StatCard label="Kasus Selesai" value={data.filter(a => a.status === 'SELESAI').length} icon={CheckCircle} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Masuk" value={data.length} icon={Inbox} trend={{ value: "+12%", positive: true }} />
-          <StatCard label="Dalam Review" value={data.filter(a => a.status === 'REVIEW').length} icon={AlertCircle} />
-          <StatCard label="Sedang Diproses" value={data.filter(a => a.status === 'DIPROSES').length} icon={Clock} className="border-l-4 border-l-yellow-500" />
-          <StatCard label="Tuntas" value={data.filter(a => a.status === 'SELESAI').length} icon={CheckCircle} className="border-l-4 border-l-green-500" />
-        </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 overflow-hidden border-none shadow-md">
-            <CardHeader className="bg-muted/30 border-b">
-              <div className="flex items-center justify-between">
+        <Tabs defaultValue="aspirasi" className="w-full">
+          <TabsList className="bg-white/5 border border-white/10 p-1 h-14 rounded-2xl mb-8">
+            <TabsTrigger value="aspirasi" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Aspirasi</TabsTrigger>
+            <TabsTrigger value="legislatif" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Legislatif</TabsTrigger>
+            <TabsTrigger value="struktur" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Struktur</TabsTrigger>
+            <TabsTrigger value="pengawasan" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Pengawasan</TabsTrigger>
+          </TabsList>
+          <TabsContent value="aspirasi">
+            <Card className="glass-card border-white/5 bg-brand-dark/40 overflow-hidden">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
                 <div>
-                  <CardTitle>Daftar Aspirasi Terbaru</CardTitle>
-                  <CardDescription>Aspirasi mahasiswa yang perlu ditindaklanjuti.</CardDescription>
+                  <h3 className="text-xl font-serif font-black text-white">Log Aspirasi Terbaru</h3>
+                  <p className="text-xs text-white/30 uppercase tracking-widest mt-1">Manajemen antrian aspirasi masuk</p>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Cari tracking ID..." className="pl-8 w-64 h-9" />
+                <div className="relative w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                  <Input placeholder="CARI TRACKING ID..." className="bg-white/5 border-white/10 pl-10 h-11 text-[10px] font-bold tracking-widest uppercase focus:border-brand-gold text-white" />
                 </div>
               </div>
-            </CardHeader>
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="w-[120px]">Tracking ID</TableHead>
-                  <TableHead>Subjek</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground">Memuat database...</TableCell></TableRow>
-                ) : data.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground">Belum ada aspirasi yang masuk.</TableCell></TableRow>
-                ) : data.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono font-bold text-xs text-primary">{item.trackingId}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium line-clamp-1">{item.subject}</span>
-                        <span className="text-[10px] text-muted-foreground">{format(item.createdAt, 'dd MMM yyyy')}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell><Badge variant="outline" className="text-[9px] uppercase">{item.category}</Badge></TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => { setSelectedAsp(item); setIsUpdateOpen(true); }}>
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+              <Table>
+                <TableHeader className="bg-white/5">
+                  <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 py-6">ID Tracking</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 py-6">Perihal</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 py-6">Kategori</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 py-6">Status</TableHead>
+                    <TableHead className="text-right text-[10px] font-black uppercase tracking-[0.2em] text-white/30 py-6 pr-8">Aksi</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-          <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle className="text-sm font-bold flex items-center gap-2"><PieChart className="w-4 h-4" /> Sebaran Status</CardTitle></CardHeader>
-              <CardContent className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RePie>
-                    <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={5}>
-                      {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                    </Pie>
-                    <Tooltip />
-                  </RePie>
-                </ResponsiveContainer>
-              </CardContent>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-24 text-white/20 font-black uppercase tracking-widest">Sinkronisasi Database...</TableCell></TableRow>
+                  ) : data.map((item) => (
+                    <TableRow key={item.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                      <TableCell className="font-mono font-bold text-xs text-brand-gold py-6">{item.trackingId}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white text-sm tracking-tight mb-1">{item.subject}</span>
+                          <span className="text-[10px] text-white/20 font-bold uppercase tracking-wider">{format(item.createdAt, 'dd MMM yyyy')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="border-white/10 text-white/40 text-[9px] uppercase tracking-widest">{item.category}</Badge></TableCell>
+                      <TableCell>{getStatusBadge(item.status)}</TableCell>
+                      <TableCell className="text-right pr-8">
+                        <Button variant="ghost" size="icon" onClick={() => { setSelectedAsp(item); setIsUpdateOpen(true); }} className="hover:bg-brand-gold/10 text-white/20 hover:text-brand-gold">
+                          <ExternalLink className="w-5 h-5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-sm font-bold flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Aktivitas Mingguan</CardTitle></CardHeader>
-              <CardContent className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{d:'Sen', v:10}, {d:'Sel', v:25}, {d:'Rab', v:15}, {d:'Kam', v:30}, {d:'Jum', v:22}]}>
-                    <XAxis dataKey="d" fontSize={10} />
-                    <Tooltip />
-                    <Bar dataKey="v" fill="#1e40af" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          </TabsContent>
+          <TabsContent value="legislatif">
+            <div className="grid md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <Card key={i} className="glass-card border-white/5 bg-brand-dark/40 hover-lift overflow-hidden group">
+                  <div className="h-1 bg-brand-gold w-0 group-hover:w-full transition-all duration-500" />
+                  <CardHeader>
+                    <p className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em] mb-2">Konstitusi</p>
+                    <CardTitle className="text-xl font-serif font-black text-white">AD/ART KEMA ULBI 2024</CardTitle>
+                    <CardDescription className="text-white/30 text-xs">Diperbarui: 12 Jan 2024</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-white/50 leading-relaxed mb-6 italic">Landasan hukum tertinggi bagi seluruh organisasi kemahasiswaan di lingkungan ULBI.</p>
+                    <Button variant="outline" className="w-full border-white/10 hover:bg-brand-gold hover:text-brand-black transition-all font-bold uppercase tracking-widest text-[10px]">
+                      <FileText className="w-4 h-4 mr-2" /> Buka Dokumen
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+          <TabsContent value="struktur">
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-3xl border-white/5">
+              <Users className="w-16 h-16 text-brand-gold/20 mb-6" />
+              <h3 className="text-2xl font-serif font-black text-white">Modul Personalia</h3>
+              <p className="text-white/40 max-w-sm mx-auto mt-2">Kelola data anggota legislatif dan struktur kepengurusan MPM KEMA ULBI.</p>
+            </div>
+          </TabsContent>
+          <TabsContent value="pengawasan">
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-3xl border-white/5">
+              <BarChart3 className="w-16 h-16 text-brand-gold/20 mb-6" />
+              <h3 className="text-2xl font-serif font-black text-white">Monitoring Kinerja</h3>
+              <p className="text-white/40 max-w-sm mx-auto mt-2">Laporan pengawasan rutin terhadap kinerja BEM dan UKM di ULBI.</p>
+            </div>
+          </TabsContent>
+        </Tabs>
         {/* Update Workflow Modal */}
         <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg bg-brand-dark border-white/10 text-white">
             <DialogHeader>
-              <DialogTitle>Kelola Aspirasi: {selectedAsp?.trackingId}</DialogTitle>
-              <DialogDescription>Tinjau detail dan tentukan alur tindak lanjut.</DialogDescription>
+              <DialogTitle className="font-serif font-black text-2xl">Moderasi Aspirasi</DialogTitle>
+              <DialogDescription className="text-white/40">Tinjau detail dan tentukan alur tindak lanjut strategis.</DialogDescription>
             </DialogHeader>
             {selectedAsp && (
-              <form onSubmit={handleUpdate} className="space-y-4 py-2">
-                <div className="p-4 bg-muted/30 rounded-lg text-sm border">
-                  <p className="font-bold mb-1">{selectedAsp.subject}</p>
-                  <p className="text-muted-foreground italic">"{selectedAsp.description}"</p>
+              <form onSubmit={handleUpdate} className="space-y-6 py-4">
+                <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-[10px] font-black text-brand-gold uppercase tracking-widest mb-2">{selectedAsp.trackingId}</p>
+                  <p className="font-bold text-lg mb-3 tracking-tight">{selectedAsp.subject}</p>
+                  <p className="text-sm text-white/50 italic leading-relaxed">"{selectedAsp.description}"</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Status Workflow</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Status Workflow</Label>
                     <Select name="status" defaultValue={selectedAsp.status}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-brand-dark border-white/10 text-white">
                         <SelectItem value="PENDING">Pending</SelectItem>
                         <SelectItem value="REVIEW">Review MPM</SelectItem>
                         <SelectItem value="DIPROSES">Diproses Pihak Kampus</SelectItem>
@@ -202,24 +210,24 @@ export default function MPMDashboard() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Tugaskan Ke</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Tugaskan Ke</Label>
                     <Select name="assignedTo" defaultValue={selectedAsp.assignedTo || 'MPM'}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-brand-dark border-white/10 text-white">
                         <SelectItem value="MPM">MPM (Legislatif)</SelectItem>
-                        <SelectItem value="KEMAHASISWAAN">Staff Kemahasiswaan</SelectItem>
+                        <SelectItem value="KEMAHASISWAAN">Kemahasiswaan</SelectItem>
                         <SelectItem value="BEM">BEM (Eksekutif)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Catatan Internal (Tidak Terlihat Mahasiswa)</Label>
-                  <Textarea name="internalNotes" placeholder="Catatan koordinasi antar lembaga..." defaultValue={selectedAsp.internalNotes} />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Catatan Koordinasi Intern</Label>
+                  <Textarea name="internalNotes" placeholder="Hanya terlihat oleh jajaran pimpinan..." className="bg-white/5 border-white/10 min-h-[100px] resize-none focus:border-brand-gold" defaultValue={selectedAsp.internalNotes} />
                 </div>
-                <DialogFooter className="pt-4">
-                  <Button type="button" variant="ghost" onClick={() => setIsUpdateOpen(false)}>Batal</Button>
-                  <Button type="submit">Simpan Perubahan</Button>
+                <DialogFooter className="pt-4 gap-3">
+                  <Button type="button" variant="ghost" onClick={() => setIsUpdateOpen(false)} className="text-white/40 hover:text-white uppercase font-bold text-[10px] tracking-widest">Batal</Button>
+                  <Button type="submit" className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] px-8 shadow-glow h-12">Simpan Perubahan</Button>
                 </DialogFooter>
               </form>
             )}

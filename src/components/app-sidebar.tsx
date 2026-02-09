@@ -1,13 +1,14 @@
 import React from "react";
-import { 
-  Inbox, 
-  FileText, 
-  PieChart, 
-  Settings, 
-  LogOut, 
+import {
+  Inbox,
+  FileText,
+  PieChart,
+  LogOut,
   User,
   LayoutDashboard,
-  Megaphone
+  Megaphone,
+  ShieldCheck,
+  Users
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,11 +22,13 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/lib/auth-store";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 export function AppSidebar(): JSX.Element {
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -33,70 +36,96 @@ export function AppSidebar(): JSX.Element {
   const getMenuItems = () => {
     if (!user) return [];
     const items = [
-      { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" }
+      { title: "Overview", icon: LayoutDashboard, url: "/dashboard" }
     ];
     if (user.role === 'MPM') {
       items.push(
-        { title: "Semua Aspirasi", icon: Inbox, url: "/dashboard" },
-        { title: "Laporan Legislatif", icon: FileText, url: "/dashboard" },
-        { title: "Statistik", icon: PieChart, url: "/dashboard" }
+        { title: "Manajemen Aspirasi", icon: Inbox, url: "/dashboard" },
+        { title: "Dokumen Legislatif", icon: FileText, url: "/dashboard" },
+        { title: "Struktur KEMA", icon: Users, url: "/dashboard" },
+        { title: "Data Statistik", icon: PieChart, url: "/dashboard" }
       );
     } else if (user.role === 'KEMAHASISWAAN') {
       items.push(
-        { title: "Inbox Tugas", icon: Megaphone, url: "/dashboard" },
-        { title: "Draft Jawaban", icon: FileText, url: "/dashboard" }
+        { title: "Inbox Aspirasi", icon: Megaphone, url: "/dashboard" },
+        { title: "Riwayat Respon", icon: FileText, url: "/dashboard" }
       );
     } else if (user.role === 'BEM') {
       items.push(
-        { title: "Proposals Saya", icon: FileText, url: "/dashboard" },
+        { title: "Proposal Kegiatan", icon: FileText, url: "/dashboard" },
         { title: "Status Pengajuan", icon: Inbox, url: "/dashboard" }
       );
     }
     return items;
   };
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold">M</div>
+    <Sidebar className="border-r border-white/5">
+      <SidebarHeader className="bg-brand-black p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-brand-gold flex items-center justify-center text-brand-black font-black text-xl shadow-glow">
+            M
+          </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold leading-none">MPM Portal</span>
-            <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">{user?.role}</span>
+            <span className="text-sm font-serif font-black tracking-tight text-white uppercase">MPM Portal</span>
+            <span className="text-[10px] text-brand-gold font-black uppercase tracking-widest leading-none mt-1">
+              {user?.role}
+            </span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-brand-black px-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2 px-4">
+            Navigasi Utama
+          </SidebarGroupLabel>
           <SidebarMenu>
-            {getMenuItems().map((item, idx) => (
-              <SidebarMenuItem key={idx}>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url} onClick={(e) => { e.preventDefault(); navigate(item.url); }}>
-                    <item.icon /> <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {getMenuItems().map((item, idx) => {
+              const isActive = location.pathname === item.url;
+              return (
+                <SidebarMenuItem key={idx} className="mb-1">
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip={item.title}
+                    className={cn(
+                      "py-6 px-4 rounded-xl transition-all duration-200",
+                      isActive 
+                        ? "bg-brand-gold/10 text-brand-gold" 
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <a href={item.url} onClick={(e) => { e.preventDefault(); navigate(item.url); }}>
+                      <item.icon className={cn("w-5 h-5", isActive ? "text-brand-gold" : "text-inherit")} />
+                      <span className="font-bold text-sm tracking-tight ml-2">{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-2 mb-2">
-              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center">
-                <User className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-xs font-medium truncate">{user?.name}</span>
-                <span className="text-[10px] text-muted-foreground truncate">{user?.username}</span>
+      <SidebarFooter className="bg-brand-black border-t border-white/5 p-4">
+        <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/5 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full border border-brand-gold/30 p-1">
+              <div className="h-full w-full rounded-full bg-brand-gold/10 flex items-center justify-center">
+                <User className="h-5 w-5 text-brand-gold" />
               </div>
             </div>
-          </SidebarMenuItem>
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-sm font-bold text-white truncate">{user?.name}</span>
+              <span className="text-[10px] text-white/40 truncate font-mono">{user?.username}</span>
+            </div>
+          </div>
+        </div>
+        <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-              <LogOut /> <span>Keluar</span>
+            <SidebarMenuButton 
+              onClick={handleLogout} 
+              className="py-6 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="w-5 h-5" /> 
+              <span className="font-bold text-sm ml-2">Keluar Sesi</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

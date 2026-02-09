@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { AspirationEntity } from "./entities";
+import { AspirationEntity, LegislativeEntity, StructureEntity, SupervisionEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import type { 
-  CreateAspirationRequest, 
-  AuthRequest, 
-  UserRole, 
+import type {
+  CreateAspirationRequest,
+  AuthRequest,
+  UserRole,
   UpdateAspirationRequest,
   AddResponseRequest,
   AspirationResponse
@@ -103,5 +103,28 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       updatedAt: Date.now()
     }));
     return ok(c, updated);
+  });
+  // Organizational Entities CRUD
+  app.get('/api/legislative', async (c) => {
+    const { items } = await LegislativeEntity.list(c.env);
+    return ok(c, items);
+  });
+  app.post('/api/legislative', async (c) => {
+    const body = await c.req.json();
+    const doc = await LegislativeEntity.create(c.env, { ...body, id: crypto.randomUUID(), updatedAt: Date.now() });
+    return ok(c, doc);
+  });
+  app.get('/api/structure', async (c) => {
+    const { items } = await StructureEntity.list(c.env);
+    return ok(c, items.sort((a, b) => a.order - b.order));
+  });
+  app.post('/api/structure', async (c) => {
+    const body = await c.req.json();
+    const member = await StructureEntity.create(c.env, { ...body, id: crypto.randomUUID() });
+    return ok(c, member);
+  });
+  app.get('/api/supervision', async (c) => {
+    const { items } = await SupervisionEntity.list(c.env);
+    return ok(c, items.sort((a, b) => b.date - a.date));
   });
 }

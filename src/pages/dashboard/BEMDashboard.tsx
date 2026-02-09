@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, FileText, Send, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, FileText, Send, Clock, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import type { Aspiration } from '@shared/types';
 import { toast } from 'sonner';
@@ -21,7 +21,6 @@ export default function BEMDashboard() {
     setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
-      // Mock filtering for BEM's own proposals
       setProposals(res.items.filter(i => i.category === 'PROPOSAL'));
     } catch (e) {
       toast.error("Gagal memuat data");
@@ -53,105 +52,108 @@ export default function BEMDashboard() {
     }
   };
   return (
-    <AppLayout container>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <AppLayout contentClassName="bg-brand-black min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 space-y-10">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-display font-extrabold tracking-tight text-foreground">Portal Proposal BEM</h1>
-            <p className="text-muted-foreground mt-1">Ajukan dan pantau status persetujuan kegiatan legislatif.</p>
+            <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tight text-white mb-2">Portal <span className="text-brand-gold italic">Eksekutif</span></h1>
+            <p className="text-white/40 text-sm font-medium uppercase tracking-widest">Pengajuan & Monitoring Anggaran BEM</p>
           </div>
           <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="shadow-lg hover:scale-105 transition-transform">
-                <Plus className="w-5 h-5 mr-2" /> Ajukan Proposal
+              <Button className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-14 px-10 rounded-2xl shadow-glow transition-transform hover:scale-105 active:scale-95">
+                <Plus className="w-5 h-5 mr-2" /> Ajukan Proposal Baru
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-xl bg-brand-dark border-white/10 text-white">
               <DialogHeader>
-                <DialogTitle>Pengajuan Proposal Baru</DialogTitle>
-                <DialogDescription>Pastikan berkas fisik sudah diserahkan ke sekretariat MPM.</DialogDescription>
+                <DialogTitle className="font-serif font-black text-3xl">Baru: Pengajuan Proposal</DialogTitle>
+                <DialogDescription className="text-white/40">Sistem monitoring legislatif KEMA ULBI.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreate} className="space-y-4 py-2">
+              <form onSubmit={handleCreate} className="space-y-6 py-4">
                 <div className="space-y-2">
-                  <Label>Judul Proposal</Label>
-                  <Input name="subject" placeholder="Contoh: Dies Natalis ULBI 2024" required />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Judul Kegiatan Utama</Label>
+                  <Input name="subject" placeholder="Contoh: Dies Natalis ULBI 2024" className="bg-white/5 border-white/10 text-white focus:border-brand-gold py-6" required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Deskripsi Singkat & Estimasi Anggaran</Label>
-                  <Textarea name="description" placeholder="Jelaskan tujuan kegiatan dan total dana yang diajukan..." className="min-h-[150px]" required />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Rangkuman Program & Estimasi Anggaran (Rp)</Label>
+                  <Textarea name="description" placeholder="Uraikan urgensi kegiatan dan total dana yang diajukan..." className="bg-white/5 border-white/10 text-white min-h-[180px] focus:border-brand-gold resize-none" required />
+                </div>
+                <div className="p-4 bg-brand-gold/5 border border-brand-gold/10 rounded-xl text-[10px] font-bold text-brand-gold/60 uppercase tracking-widest flex items-center gap-3">
+                  <Sparkles className="w-5 h-5" /> Pastikan Berkas Fisik Sudah Diterima MPM.
                 </div>
                 <DialogFooter className="pt-4">
-                  <Button type="submit" className="w-full">Kirim Pengajuan Resmi</Button>
+                  <Button type="submit" className="w-full py-7 bg-brand-gold text-brand-black font-black uppercase tracking-[0.2em] shadow-glow">Kirim Pengajuan Resmi</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </header>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
-             Array(3).fill(0).map((_, i) => <Card key={i} className="h-48 animate-pulse bg-muted" />)
+             Array(3).fill(0).map((_, i) => <Card key={i} className="h-64 glass-card animate-pulse border-white/5" />)
           ) : proposals.length === 0 ? (
-            <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl bg-muted/20">
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-              <p className="text-muted-foreground">Belum ada proposal yang diajukan.</p>
+            <div className="col-span-full py-32 text-center glass-card border-dashed border-white/10 bg-transparent flex flex-col items-center justify-center">
+              <FileText className="w-20 h-20 text-white/10 mb-8" />
+              <h3 className="text-2xl font-serif font-black text-white">Belum Ada Riwayat</h3>
+              <p className="text-white/40 mt-2">Gunakan tombol di atas untuk memulai pengajuan.</p>
             </div>
           ) : proposals.map((prop) => (
-            <Card key={prop.id} className="group hover:border-primary transition-colors">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-mono text-[10px] font-bold text-muted-foreground">{prop.trackingId}</span>
-                  <Badge variant={prop.status === 'SELESAI' ? 'secondary' : 'default'} className="text-[10px]">
+            <Card key={prop.id} className="glass-card border-none bg-brand-dark/40 hover-lift group overflow-hidden">
+              <div className={cn(
+                "h-1.5 w-full",
+                prop.status === 'SELESAI' ? 'bg-green-500' :
+                prop.status === 'DIPROSES' ? 'bg-brand-gold' : 'bg-white/10'
+              )} />
+              <CardHeader className="pb-4 p-8">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-mono text-[10px] font-black text-brand-gold uppercase tracking-widest">{prop.trackingId}</span>
+                  <Badge className={cn("text-[9px] font-black uppercase tracking-widest", prop.status === 'SELESAI' ? "bg-green-500/10 text-green-500" : "bg-white/5 text-white/40")}>
                     {prop.status}
                   </Badge>
                 </div>
-                <CardTitle className="line-clamp-2 text-lg group-hover:text-primary transition-colors">{prop.subject}</CardTitle>
-                <CardDescription>Diajukan: {format(prop.createdAt, 'dd/MM/yyyy')}</CardDescription>
+                <CardTitle className="text-xl font-serif font-black text-white tracking-tight leading-snug group-hover:text-brand-gold transition-colors">{prop.subject}</CardTitle>
+                <CardDescription className="text-white/20 text-[10px] font-bold uppercase tracking-widest mt-2">Dibuat: {format(prop.createdAt, 'dd/MM/yyyy')}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    <span>Tahap Persetujuan</span>
-                    <span>{prop.status === 'SELESAI' ? '100%' : prop.status === 'DIPROSES' ? '75%' : prop.status === 'REVIEW' ? '40%' : '10%'}</span>
+              <CardContent className="px-8 pb-8 space-y-8">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-white/30">
+                    <span>Progres Persetujuan</span>
+                    <span className="text-brand-gold">{prop.status === 'SELESAI' ? '100%' : prop.status === 'DIPROSES' ? '75%' : prop.status === 'REVIEW' ? '40%' : '10%'}</span>
                   </div>
-                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                     <div className={cn(
-                      "h-full transition-all duration-500",
-                      prop.status === 'SELESAI' ? 'bg-green-500 w-full' : 
-                      prop.status === 'DIPROSES' ? 'bg-primary w-[75%]' : 
-                      prop.status === 'REVIEW' ? 'bg-yellow-500 w-[40%]' : 'bg-muted-foreground/30 w-[10%]'
+                      "h-full transition-all duration-1000",
+                      prop.status === 'SELESAI' ? 'bg-green-500 w-full' :
+                      prop.status === 'DIPROSES' ? 'bg-brand-gold w-[75%]' :
+                      prop.status === 'REVIEW' ? 'bg-brand-gold/50 w-[40%]' : 'bg-white/20 w-[10%]'
                     )} />
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex flex-col items-center gap-1 opacity-50">
-                    <Clock className="w-4 h-4" />
-                    <span>Ditinjau</span>
+                <div className="flex items-center gap-6 pt-4 border-t border-white/5">
+                  <div className="flex-1 flex flex-col items-center gap-2">
+                    <Clock className="w-5 h-5 text-white/10" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Audit</span>
                   </div>
-                  <div className="flex-1 h-px bg-muted" />
-                  <div className={cn("flex flex-col items-center gap-1", prop.status === 'SELESAI' ? "text-green-600" : "opacity-30")}>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Disetujui</span>
+                  <div className="flex-1 flex flex-col items-center gap-2">
+                    <CheckCircle2 className={cn("w-5 h-5", prop.status === 'SELESAI' ? "text-green-500" : "text-white/10")} />
+                    <span className={cn("text-[9px] font-black uppercase tracking-widest", prop.status === 'SELESAI' ? "text-green-500" : "text-white/20")}>Cair</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg text-white">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-sm">Informasi Penting Legislatif</CardTitle>
-                <CardDescription className="text-xs">Update terakhir kebijakan MPM: 01 Jan 2024</CardDescription>
-              </div>
+        <Card className="glass-card border-none bg-brand-gold/5 border-l-4 border-l-brand-gold rounded-3xl p-8">
+          <div className="flex items-start gap-6">
+            <div className="p-4 bg-brand-gold rounded-2xl text-brand-black shadow-glow">
+              <AlertCircle className="w-6 h-6" />
             </div>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground leading-relaxed">
-            Sesuai AD/ART KEMA ULBI, setiap pengajuan anggaran organisasi wajib melalui sistem monitoring MPM untuk transparansi penggunaan dana kemahasiswaan. Mohon pastikan deskripsi proposal mencakup rincian manfaat bagi mahasiswa.
-          </CardContent>
+            <div>
+              <h3 className="text-xl font-serif font-black text-white uppercase tracking-tight mb-2">Pemberitahuan Legislatif</h3>
+              <p className="text-sm text-white/50 leading-relaxed max-w-2xl font-medium italic">"Sesuai peraturan MPM No. 04/2024, setiap pengajuan proposal wajib mencantumkan Analisis Dampak Kemahasiswaan (ADK) untuk transparansi penggunaan dana publik."</p>
+            </div>
+          </div>
         </Card>
       </div>
     </AppLayout>
