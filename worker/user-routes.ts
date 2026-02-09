@@ -2,7 +2,14 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { AspirationEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import type { CreateAspirationRequest, AuthRequest, UserRole } from "@shared/types";
+import type { 
+  CreateAspirationRequest, 
+  AuthRequest, 
+  UserRole, 
+  UpdateAspirationRequest, 
+  AddResponseRequest,
+  AspirationResponse
+} from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Mock Auth
   app.post('/api/auth/login', async (c) => {
@@ -19,11 +26,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       token: "mock-jwt-token"
     });
   });
-  // Public/Internal: List Aspirations (Mocking filtered list)
+  // Internal: List Aspirations
   app.get('/api/aspirations', async (c) => {
     try {
       const { items } = await AspirationEntity.list(c.env, null, 100);
-      return ok(c, { items });
+      return ok(c, { items: items.sort((a, b) => b.createdAt - a.createdAt) });
     } catch (e) {
       return ok(c, { items: [] });
     }
@@ -47,5 +54,39 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const aspiration = await AspirationEntity.getByTrackingId(c.env, trackingId);
     if (!aspiration) return notFound(c, "Aspirasi tidak ditemukan");
     return ok(c, aspiration);
+  });
+  // Internal: Update Aspiration (Status, Assignment, Internal Notes)
+  app.patch('/api/aspirations/:id', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.json() as UpdateAspirationRequest;
+    const ent = new AspirationEntity(c.env, id);
+    if (!await ent.exists()) return notFound(c);
+    const updated = await ent.mutate(s => ({
+      ...s,
+      ...body,
+      updatedAt: Date.now()
+    }));
+    return ok(c, updated);
+  });
+  // Internal: Add Official Response
+  app.post('/api/aspirations/:id/responses', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.json() as AddResponseRequest;
+    const ent = new AspirationEntity(c.env, id);
+    if (!await ent.exists()) return notFound(c);
+    const newResponse: AspirationResponse = {
+      id: crypto.randomUUID(),
+      authorRole: body.authorRole,
+      authorName: body.authorName,
+      content: body.content,
+      timestamp: Date.now(),
+      statusAtResponse: (await ent.getState()).status
+    };
+    const updated = await ent.mutate(s => ({
+      ...s,
+      responses: [...(s.responses || []), newResponse],
+      updatedAt: Date.now()
+    }));
+    return ok(c, updated);
   });
 }

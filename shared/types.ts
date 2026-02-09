@@ -5,7 +5,15 @@ export interface ApiResponse<T = unknown> {
 }
 export type UserRole = 'MPM' | 'KEMAHASISWAAN' | 'BEM' | 'STUDENT';
 export type AspirationStatus = 'PENDING' | 'REVIEW' | 'DIPROSES' | 'SELESAI';
-export type AspirationCategory = 'AKADEMIK' | 'FASILITAS' | 'ORGANISASI' | 'LAINNYA';
+export type AspirationCategory = 'AKADEMIK' | 'FASILITAS' | 'ORGANISASI' | 'PROPOSAL' | 'LAINNYA';
+export interface AspirationResponse {
+  id: string;
+  authorRole: UserRole;
+  authorName: string;
+  content: string;
+  timestamp: number;
+  statusAtResponse: AspirationStatus;
+}
 export interface Aspiration {
   id: string;
   trackingId: string;
@@ -18,12 +26,8 @@ export interface Aspiration {
   createdAt: number;
   updatedAt: number;
   responses?: AspirationResponse[];
-}
-export interface AspirationResponse {
-  id: string;
-  authorRole: UserRole;
-  content: string;
-  timestamp: number;
+  internalNotes?: string;
+  assignedTo?: UserRole;
 }
 export interface CreateAspirationRequest {
   name: string;
@@ -31,6 +35,16 @@ export interface CreateAspirationRequest {
   category: AspirationCategory;
   subject: string;
   description: string;
+}
+export interface UpdateAspirationRequest {
+  status?: AspirationStatus;
+  internalNotes?: string;
+  assignedTo?: UserRole;
+}
+export interface AddResponseRequest {
+  content: string;
+  authorRole: UserRole;
+  authorName: string;
 }
 export interface User {
   id: string;

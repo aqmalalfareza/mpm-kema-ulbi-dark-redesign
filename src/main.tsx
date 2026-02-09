@@ -1,7 +1,7 @@
 import '@/lib/errorReporter';
 import { enableMapSet } from "immer";
 enableMapSet();
-import { StrictMode } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -18,19 +18,25 @@ import MPMDashboard from '@/pages/dashboard/MPMDashboard'
 import StaffDashboard from '@/pages/dashboard/StaffDashboard'
 import BEMDashboard from '@/pages/dashboard/BEMDashboard'
 import { useAuthStore } from '@/lib/auth-store'
-const queryClient = new QueryClient();
-const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+// Separated component for Fast Refresh compatibility
+export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useAuthStore(s => s.user);
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
   return <>{children}</>;
 };
-const DashboardRouter = () => {
+// Separated component for Fast Refresh compatibility
+export const DashboardRouter = () => {
   const user = useAuthStore(s => s.user);
   if (!user) return <Navigate to="/login" />;
   switch(user.role) {
@@ -53,8 +59,16 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <ProtectedRoute><DashboardRouter /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <DashboardRouter />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   }
 ]);
 createRoot(document.getElementById('root')!).render(

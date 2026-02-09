@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Search, CheckCircle2, Circle, Clock, MessageSquare } from 'lucide-react';
+import { Search, CheckCircle2, Circle, Clock, MessageSquare, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Aspiration, AspirationStatus } from '@shared/types';
 import { format } from 'date-fns';
@@ -25,7 +25,7 @@ export function StatusCheck() {
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Aspiration | null>(null);
-  async function handleSearch() {
+  const handleSearch = async () => {
     if (!trackingId.trim()) return;
     setLoading(true);
     try {
@@ -37,64 +37,74 @@ export function StatusCheck() {
     } finally {
       setLoading(false);
     }
-  }
+  };
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setData(null);
+      setTrackingId('');
+    }
+  };
   const currentStageIndex = data ? STAGES.findIndex(s => s.value === data.status) : -1;
   return (
-    <Dialog onOpenChange={(v) => { if(!v) { setData(null); setTrackingId(''); } }}>
+    <Dialog onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" className="rounded-full px-8 py-6 border-2">
+        <Button variant="outline" size="lg" className="rounded-full px-8 py-6 border-2 font-semibold hover:bg-secondary/5">
           Cek Status Aspirasi
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Lacak Aspirasi</DialogTitle>
-          <DialogDescription>Masukkan kode tracking yang Anda dapatkan saat mengirim aspirasi.</DialogDescription>
+          <DialogTitle className="font-display text-2xl">Lacak Progres Aspirasi</DialogTitle>
+          <DialogDescription>Masukkan kode tracking unik Anda untuk melihat perkembangan terbaru.</DialogDescription>
         </DialogHeader>
         <div className="flex gap-2 mt-4">
-          <Input 
-            placeholder="Contoh: ASP-123456" 
-            className="uppercase font-mono text-lg"
+          <Input
+            placeholder="Contoh: ASP-123456"
+            className="uppercase font-mono text-lg py-6"
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <Button onClick={handleSearch} disabled={loading}>
-            {loading ? <Clock className="animate-spin" /> : <Search />}
+          <Button onClick={handleSearch} disabled={loading} className="px-6">
+            {loading ? <Clock className="animate-spin h-5 w-5" /> : <Search className="h-5 w-5" />}
           </Button>
         </div>
         {data && (
-          <div className="mt-8 space-y-6 animate-fade-in">
-            <div className="p-4 bg-accent/50 rounded-lg border">
-              <h3 className="font-bold text-lg mb-1">{data.subject}</h3>
-              <p className="text-sm text-muted-foreground">Kategori: <span className="text-foreground font-medium">{data.category}</span></p>
-              <p className="text-sm text-muted-foreground">Tanggal: {format(data.createdAt, 'dd MMM yyyy, HH:mm')}</p>
+          <div className="mt-8 space-y-8 animate-fade-in">
+            <div className="p-5 bg-primary/5 rounded-xl border-l-4 border-l-primary shadow-sm">
+              <h3 className="font-bold text-xl mb-1 text-primary">{data.subject}</h3>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> {data.category}</span>
+                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {format(data.createdAt, 'dd MMM yyyy')}</span>
+              </div>
             </div>
-            <div className="relative space-y-4">
+            <div className="space-y-1">
               {STAGES.map((stage, idx) => {
                 const isCompleted = idx <= currentStageIndex;
                 const isCurrent = idx === currentStageIndex;
                 return (
-                  <div key={stage.value} className="flex gap-4 relative">
-                    {idx !== STAGES.length - 1 && (
+                  <div key={stage.value} className="flex gap-4 group">
+                    <div className="flex flex-col items-center">
                       <div className={cn(
-                        "absolute left-3 top-6 w-0.5 h-full",
-                        isCompleted ? "bg-primary" : "bg-muted"
-                      )} />
-                    )}
-                    <div className={cn(
-                      "z-10 w-6 h-6 rounded-full flex items-center justify-center bg-background border-2",
-                      isCompleted ? "border-primary text-primary" : "border-muted text-muted"
-                    )}>
-                      {isCompleted ? <CheckCircle2 className="w-4 h-4 fill-primary text-white" /> : <Circle className="w-4 h-4" />}
+                        "z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
+                        isCompleted ? "bg-primary border-primary text-white" : "bg-background border-muted text-muted"
+                      )}>
+                        {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-2 h-2 rounded-full bg-muted" />}
+                      </div>
+                      {idx !== STAGES.length - 1 && (
+                        <div className={cn(
+                          "w-0.5 h-12 transition-colors",
+                          idx < currentStageIndex ? "bg-primary" : "bg-muted"
+                        )} />
+                      )}
                     </div>
-                    <div className="flex-1 pb-4">
+                    <div className="flex-1 pt-1">
                       <p className={cn(
-                        "font-semibold",
+                        "font-bold text-lg",
                         isCurrent ? "text-primary" : isCompleted ? "text-foreground" : "text-muted-foreground"
                       )}>{stage.label}</p>
                       {isCurrent && (
-                        <p className="text-xs text-muted-foreground">Sedang dalam tahap ini...</p>
+                        <p className="text-sm text-muted-foreground mt-0.5 italic">Tim kami sedang menangani tahap ini.</p>
                       )}
                     </div>
                   </div>
@@ -102,19 +112,24 @@ export function StatusCheck() {
               })}
             </div>
             {data.responses && data.responses.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" /> Tanggapan Resmi
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-display font-bold text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" /> Tanggapan Resmi
                 </h4>
-                {data.responses.map(res => (
-                  <div key={res.id} className="p-3 bg-muted rounded border-l-4 border-primary text-sm">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-xs uppercase">{res.authorRole}</span>
-                      <span className="text-2xs text-muted-foreground">{format(res.timestamp, 'dd/MM/yy HH:mm')}</span>
+                <div className="space-y-4">
+                  {data.responses.map(res => (
+                    <div key={res.id} className="p-4 bg-muted/40 rounded-xl border text-sm relative">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-bold text-primary uppercase text-xs tracking-wider">{res.authorRole}</p>
+                          <p className="text-[10px] text-muted-foreground">{res.authorName}</p>
+                        </div>
+                        <span className="text-[10px] font-mono bg-background px-2 py-0.5 rounded border">{format(res.timestamp, 'dd/MM/yy HH:mm')}</span>
+                      </div>
+                      <p className="leading-relaxed whitespace-pre-line text-foreground/90">{res.content}</p>
                     </div>
-                    <p>{res.content}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
