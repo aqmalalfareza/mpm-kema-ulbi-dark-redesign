@@ -14,31 +14,53 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api-client';
-import type { Aspiration, AspirationStatus, UserRole } from '@shared/types';
+import type { Aspiration, AspirationStatus, UserRole, LegislativeDocument, StructureMember, SupervisionActivity } from '@shared/types';
 import { format } from 'date-fns';
 import {
   Search, Filter, ExternalLink, Inbox,
-  CheckCircle, Clock, AlertCircle, FileText, Users, Activity, BarChart3
+  CheckCircle, Clock, AlertCircle, FileText, Users, Activity, BarChart3, Download, MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
 export default function MPMDashboard() {
   const [data, setData] = useState<Aspiration[]>([]);
+  const [legislativeDocs, setLegislativeDocs] = useState<LegislativeDocument[]>([]);
+  const [structureMembers, setStructureMembers] = useState<StructureMember[]>([]);
+  const [supervisionLogs, setSupervisionLogs] = useState<SupervisionActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAsp, setSelectedAsp] = useState<Aspiration | null>(null);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const fetchAspirations = async () => {
-    setLoading(true);
+  const fetchAspirations = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
       setData(res.items);
     } catch (err) {
-      toast.error("Gagal mengambil data aspirasi");
+      console.error("Gagal sync data", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
+    }
+  };
+  const fetchOrgData = async () => {
+    try {
+      const [legRes, structRes, supRes] = await Promise.all([
+        api<LegislativeDocument[]>('/api/legislative'),
+        api<StructureMember[]>('/api/structure'),
+        api<SupervisionActivity[]>('/api/supervision')
+      ]);
+      setLegislativeDocs(legRes);
+      setStructureMembers(structRes);
+      setSupervisionLogs(supRes);
+    } catch (err) {
+      console.error("Gagal mengambil data organisasi", err);
     }
   };
   useEffect(() => {
-    fetchAspirations();
+    fetchAspirations(true);
+    fetchOrgData();
+    const interval = setInterval(() => {
+      fetchAspirations(false);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,7 +78,7 @@ export default function MPMDashboard() {
       });
       toast.success("Update berhasil disimpan");
       setIsUpdateOpen(false);
-      fetchAspirations();
+      fetchAspirations(false);
     } catch (err) {
       toast.error("Gagal update status");
     }
@@ -82,7 +104,7 @@ export default function MPMDashboard() {
             <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white/60 hover:text-brand-gold font-bold uppercase tracking-widest text-[10px] h-12 px-6">
               <Filter className="w-4 h-4 mr-2" /> Filter
             </Button>
-            <Button onClick={fetchAspirations} className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 shadow-glow">
+            <Button onClick={() => fetchAspirations(true)} className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 shadow-glow">
               <Activity className="w-4 h-4 mr-2" /> Sync Data
             </Button>
           </div>
@@ -94,7 +116,7 @@ export default function MPMDashboard() {
           <StatCard label="Kasus Selesai" value={data.filter(a => a.status === 'SELESAI').length} icon={CheckCircle} />
         </div>
         <Tabs defaultValue="aspirasi" className="w-full">
-          <TabsList className="bg-white/5 border border-white/10 p-1 h-14 rounded-2xl mb-8">
+          <TabsList className="bg-white/5 border border-white/10 p-1 h-14 rounded-2xl mb-8 overflow-x-auto">
             <TabsTrigger value="aspirasi" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Aspirasi</TabsTrigger>
             <TabsTrigger value="legislatif" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Legislatif</TabsTrigger>
             <TabsTrigger value="struktur" className="rounded-xl data-[state=active]:bg-brand-gold data-[state=active]:text-brand-black font-bold text-xs uppercase tracking-widest px-8">Struktur</TabsTrigger>
@@ -102,12 +124,12 @@ export default function MPMDashboard() {
           </TabsList>
           <TabsContent value="aspirasi">
             <Card className="glass-card border-white/5 bg-brand-dark/40 overflow-hidden">
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-serif font-black text-white">Log Aspirasi Terbaru</h3>
                   <p className="text-xs text-white/30 uppercase tracking-widest mt-1">Manajemen antrian aspirasi masuk</p>
                 </div>
-                <div className="relative w-72">
+                <div className="relative w-full sm:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                   <Input placeholder="CARI TRACKING ID..." className="bg-white/5 border-white/10 pl-10 h-11 text-[10px] font-bold tracking-widest uppercase focus:border-brand-gold text-white" />
                 </div>
@@ -125,6 +147,8 @@ export default function MPMDashboard() {
                 <TableBody>
                   {loading ? (
                     <TableRow><TableCell colSpan={5} className="text-center py-24 text-white/20 font-black uppercase tracking-widest">Sinkronisasi Database...</TableCell></TableRow>
+                  ) : data.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-24 text-white/20 font-black uppercase tracking-widest">Belum ada aspirasi masuk.</TableCell></TableRow>
                   ) : data.map((item) => (
                     <TableRow key={item.id} className="border-white/5 hover:bg-white/5 transition-colors group">
                       <TableCell className="font-mono font-bold text-xs text-brand-gold py-6">{item.trackingId}</TableCell>
@@ -148,19 +172,21 @@ export default function MPMDashboard() {
             </Card>
           </TabsContent>
           <TabsContent value="legislatif">
-            <div className="grid md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="glass-card border-white/5 bg-brand-dark/40 hover-lift overflow-hidden group">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {legislativeDocs.map(doc => (
+                <Card key={doc.id} className="glass-card border-white/5 bg-brand-dark/40 hover-lift overflow-hidden group">
                   <div className="h-1 bg-brand-gold w-0 group-hover:w-full transition-all duration-500" />
                   <CardHeader>
-                    <p className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em] mb-2">Konstitusi</p>
-                    <CardTitle className="text-xl font-serif font-black text-white">AD/ART KEMA ULBI 2024</CardTitle>
-                    <CardDescription className="text-white/30 text-xs">Diperbarui: 12 Jan 2024</CardDescription>
+                    <p className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em] mb-2">{doc.category}</p>
+                    <CardTitle className="text-xl font-serif font-black text-white">{doc.title}</CardTitle>
+                    <CardDescription className="text-white/30 text-xs">Diperbarui: {format(doc.updatedAt, 'dd MMM yyyy')}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-white/50 leading-relaxed mb-6 italic">Landasan hukum tertinggi bagi seluruh organisasi kemahasiswaan di lingkungan ULBI.</p>
-                    <Button variant="outline" className="w-full border-white/10 hover:bg-brand-gold hover:text-brand-black transition-all font-bold uppercase tracking-widest text-[10px]">
-                      <FileText className="w-4 h-4 mr-2" /> Buka Dokumen
+                    <p className="text-sm text-white/50 leading-relaxed mb-6 italic">Dokumen hukum resmi yang mengatur tata kelola organisasi kemahasiswaan ULBI.</p>
+                    <Button variant="outline" className="w-full border-white/10 hover:bg-brand-gold hover:text-brand-black transition-all font-bold uppercase tracking-widest text-[10px]" asChild>
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                        <FileText className="w-4 h-4 mr-2" /> Buka Dokumen
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
@@ -168,17 +194,44 @@ export default function MPMDashboard() {
             </div>
           </TabsContent>
           <TabsContent value="struktur">
-            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-3xl border-white/5">
-              <Users className="w-16 h-16 text-brand-gold/20 mb-6" />
-              <h3 className="text-2xl font-serif font-black text-white">Modul Personalia</h3>
-              <p className="text-white/40 max-w-sm mx-auto mt-2">Kelola data anggota legislatif dan struktur kepengurusan MPM KEMA ULBI.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {structureMembers.map(member => (
+                <div key={member.id} className="group relative flex flex-col items-center">
+                  <div className="relative w-32 h-32 mb-4">
+                    <div className="absolute inset-0 rounded-full border-2 border-brand-gold/20 scale-110 group-hover:scale-125 transition-transform duration-500" />
+                    <div className="absolute inset-0 rounded-full overflow-hidden bg-white/5 border border-white/10">
+                      <img 
+                        src={member.imageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.id}`} 
+                        alt={member.name}
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <h4 className="text-white font-bold text-center text-sm">{member.name}</h4>
+                  <p className="text-[10px] text-brand-gold uppercase font-black tracking-widest mt-1 text-center">{member.position}</p>
+                </div>
+              ))}
             </div>
           </TabsContent>
           <TabsContent value="pengawasan">
-            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-3xl border-white/5">
-              <BarChart3 className="w-16 h-16 text-brand-gold/20 mb-6" />
-              <h3 className="text-2xl font-serif font-black text-white">Monitoring Kinerja</h3>
-              <p className="text-white/40 max-w-sm mx-auto mt-2">Laporan pengawasan rutin terhadap kinerja BEM dan UKM di ULBI.</p>
+            <div className="space-y-6">
+              {supervisionLogs.map(log => (
+                <Card key={log.id} className="glass-card border-none bg-brand-dark/40 overflow-hidden">
+                  <div className="flex items-center gap-6 p-6">
+                    <div className="h-16 w-16 bg-brand-gold/10 rounded-2xl flex flex-col items-center justify-center shrink-0 border border-brand-gold/20">
+                      <span className="text-[10px] font-black text-brand-gold uppercase">{format(log.date, 'MMM')}</span>
+                      <span className="text-2xl font-serif font-black text-white">{format(log.date, 'dd')}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold text-white mb-1">{log.title}</h4>
+                      <p className="text-sm text-white/40 leading-relaxed">{log.description}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-white/20 hover:text-brand-gold">
+                      <ExternalLink className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
             </div>
           </TabsContent>
         </Tabs>

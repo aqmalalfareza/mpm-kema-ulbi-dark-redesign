@@ -4,6 +4,7 @@ import { StatCard } from '@/components/dashboard/DashboardShared';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api-client';
 import type { Aspiration } from '@shared/types';
@@ -20,19 +21,24 @@ export default function StaffDashboard() {
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const user = useAuthStore(s => s.user);
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
-      setData(res.items.filter(a => a.assignedTo === 'KEMAHASISWAAN' || a.status === 'DIPROSES'));
+      const filtered = res.items.filter(a => a.assignedTo === 'KEMAHASISWAAN' || a.status === 'DIPROSES');
+      setData(filtered);
     } catch (err) {
-      toast.error("Gagal memuat tugas");
+      console.error("Gagal memuat tugas", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
   useEffect(() => {
-    fetchTasks();
+    fetchTasks(true);
+    const interval = setInterval(() => {
+      fetchTasks(false);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
   const handlePostReply = async (id: string) => {
     if (!replyText.trim() || !user) return;
@@ -53,7 +59,7 @@ export default function StaffDashboard() {
       toast.success("Tanggapan resmi berhasil dipublikasikan");
       setReplyText('');
       setReplyId(null);
-      fetchTasks();
+      fetchTasks(false);
     } catch (err) {
       toast.error("Gagal mengirim tanggapan");
     } finally {
@@ -134,9 +140,9 @@ export default function StaffDashboard() {
                           onChange={(e) => setReplyText(e.target.value)}
                         />
                         <div className="flex gap-3">
-                          <Button 
-                            className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] px-8 h-12 shadow-glow" 
-                            onClick={() => handlePostReply(item.id)} 
+                          <Button
+                            className="bg-brand-gold text-brand-black hover:bg-brand-gold/90 font-black uppercase tracking-widest text-[10px] px-8 h-12 shadow-glow"
+                            onClick={() => handlePostReply(item.id)}
                             disabled={submitting}
                           >
                             {submitting ? <Clock className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
@@ -147,8 +153,8 @@ export default function StaffDashboard() {
                       </div>
                     ) : (
                       item.status !== 'SELESAI' && (
-                        <Button 
-                          className="w-full md:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-brand-gold font-black uppercase tracking-widest text-[10px] px-8 h-14" 
+                        <Button
+                          className="w-full md:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-brand-gold font-black uppercase tracking-widest text-[10px] px-8 h-14"
                           onClick={() => setReplyId(item.id)}
                         >
                           <MessageSquare className="w-4 h-4 mr-2" /> Selesaikan & Kirim Respon

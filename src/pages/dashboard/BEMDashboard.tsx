@@ -17,18 +17,24 @@ export default function BEMDashboard() {
   const [proposals, setProposals] = useState<Aspiration[]>([]);
   const [loading, setLoading] = useState(true);
   const [isNewOpen, setIsNewOpen] = useState(false);
-  const fetchProposals = async () => {
-    setLoading(true);
+  const fetchProposals = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await api<{items: Aspiration[]}>('/api/aspirations');
       setProposals(res.items.filter(i => i.category === 'PROPOSAL'));
     } catch (e) {
-      toast.error("Gagal memuat data");
+      console.error("Gagal memuat data proposal", e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
-  useEffect(() => { fetchProposals(); }, []);
+  useEffect(() => {
+    fetchProposals(true);
+    const interval = setInterval(() => {
+      fetchProposals(false);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -46,7 +52,7 @@ export default function BEMDashboard() {
       });
       toast.success("Proposal berhasil diajukan!");
       setIsNewOpen(false);
-      fetchProposals();
+      fetchProposals(false);
     } catch (err) {
       toast.error("Gagal mengirim proposal");
     }

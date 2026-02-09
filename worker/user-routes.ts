@@ -104,27 +104,52 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }));
     return ok(c, updated);
   });
-  // Organizational Entities CRUD
+  // Organizational Entities CRUD with Seeding
   app.get('/api/legislative', async (c) => {
-    const { items } = await LegislativeEntity.list(c.env);
+    let { items } = await LegislativeEntity.list(c.env);
+    if (items.length === 0) {
+      const seeds = [
+        { id: crypto.randomUUID(), title: "AD/ART KEMA ULBI 2024", category: "Konstitusi", url: "#", updatedAt: Date.now() },
+        { id: crypto.randomUUID(), title: "UU Pemilu Raya Mahasiswa", category: "Undang-Undang", url: "#", updatedAt: Date.now() },
+        { id: crypto.randomUUID(), title: "PO Organisasi Kemahasiswaan", category: "Peraturan", url: "#", updatedAt: Date.now() }
+      ];
+      for (const s of seeds) await LegislativeEntity.create(c.env, s);
+      items = seeds;
+    }
     return ok(c, items);
   });
-  app.post('/api/legislative', async (c) => {
-    const body = await c.req.json();
-    const doc = await LegislativeEntity.create(c.env, { ...body, id: crypto.randomUUID(), updatedAt: Date.now() });
-    return ok(c, doc);
-  });
   app.get('/api/structure', async (c) => {
-    const { items } = await StructureEntity.list(c.env);
+    let { items } = await StructureEntity.list(c.env);
+    if (items.length === 0) {
+      const seeds = [
+        { id: "1", name: "Rizky Pratama", position: "Ketua Umum MPM", order: 1 },
+        { id: "2", name: "Aisyah Putri", position: "Sekretaris Jenderal", order: 2 },
+        { id: "3", name: "Budi Santoso", position: "Ketua Komisi I (Legislasi)", order: 3 },
+        { id: "4", name: "Citra Lestari", position: "Ketua Komisi II (Pengawasan)", order: 4 },
+        { id: "5", name: "Dimas Wahyu", position: "Ketua Komisi III (Aspirasi)", order: 5 }
+      ];
+      for (const s of seeds) await StructureEntity.create(c.env, s);
+      items = seeds;
+    }
     return ok(c, items.sort((a, b) => a.order - b.order));
   });
-  app.post('/api/structure', async (c) => {
-    const body = await c.req.json();
-    const member = await StructureEntity.create(c.env, { ...body, id: crypto.randomUUID() });
-    return ok(c, member);
-  });
   app.get('/api/supervision', async (c) => {
-    const { items } = await SupervisionEntity.list(c.env);
+    let { items } = await SupervisionEntity.list(c.env);
+    if (items.length === 0) {
+      const seeds = [
+        { id: crypto.randomUUID(), title: "Audit Triwulan BEM ULBI", date: Date.now() - 86400000 * 5, description: "Pengecekan laporan pertanggungjawaban kegiatan Dies Natalis." },
+        { id: crypto.randomUUID(), title: "Monitoring UKM Olahraga", date: Date.now() - 86400000 * 10, description: "Evaluasi penggunaan fasilitas GOR oleh UKM Basket dan Futsal." },
+        { id: crypto.randomUUID(), title: "Sidang Paripurna I 2024", date: Date.now() - 86400000 * 15, description: "Pembahasan rancangan undang-undang sistem kaderisasi mahasiswa." }
+      ];
+      for (const s of seeds) await SupervisionEntity.create(c.env, s);
+      items = seeds;
+    }
     return ok(c, items.sort((a, b) => b.date - a.date));
+  });
+  // Cleanup Route
+  app.delete('/api/aspirations/:id', async (c) => {
+    const id = c.req.param('id');
+    const success = await AspirationEntity.delete(c.env, id);
+    return ok(c, { success });
   });
 }
